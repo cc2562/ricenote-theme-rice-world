@@ -44,11 +44,16 @@
     </div>
   </article>
 
+  {# 背景封面：整张图与标题都指向文章。图片与其它版式一样外包一层 .slot-link
+     （aria-hidden + tabindex=-1，可访问名称由标题链接承担），
+     压暗层与叠字层都设 pointer-events: none，点击空白处会穿透到这张图上。 #}
 {% elif layout == 'background' %}
   <article class="entry entry--background" data-entry>
     <div class="entry-cover">
-      {{ image.slot(items[0].src, '', 'media-background', items[0].focus, budget >= 1) }}
-      <span class="scrim" aria-hidden="true"></span>
+      <a class="slot-link" href="{{ entry.url }}" tabindex="-1" aria-hidden="true">
+        {{ image.slot(items[0].src, '', 'media-background', items[0].focus, budget >= 1) }}
+      </a>
+      <span class="cover-shade" aria-hidden="true"></span>
       <div class="cap">
         {{ parts.meta(entry) }}
         {{ parts.heading(entry) }}

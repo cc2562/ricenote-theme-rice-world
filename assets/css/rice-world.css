@@ -398,6 +398,10 @@ html[data-motion="off"] .index-fab { transition: none; }
   overflow: hidden;
   border-radius: var(--radius-image);
   background: var(--ph-color);
+  /* 自建层叠上下文（z-index: 0）。否则下面 .slot-ph/.slot-img 的 z-index 会「漏」进
+     祖先的层叠上下文，把叠在图片之上的兄弟节点（例如背景封面的标题，z-index: auto）
+     整块盖住 —— 曾表现为「背景封面只剩一张图，标题与元数据都不见了」。 */
+  z-index: 0;
 }
 .slot svg { width: 100%; height: 100%; display: block; }
 
@@ -438,8 +442,11 @@ a:hover > .slot .slot-img,
 .slot::after {
   content: "";
   position: absolute; inset: 0;
+  /* 图片是 z-index: 1，悬停压暗要盖在它之上，否则这层永远看不见 */
+  z-index: 2;
   background: color-mix(in oklab, var(--color-text) 0%, transparent);
   transition: background var(--duration-fast) var(--ease-editorial);
+  pointer-events: none;
 }
 a:hover > .slot::after,
 .slot-link:hover .slot::after { background: color-mix(in oklab, var(--color-text) 5%, transparent); }
@@ -447,21 +454,28 @@ a:hover > .slot::after,
 
 /* background 封面叠字 */
 .entry-cover { position: relative; }
+/* 压暗层刻意不叫 .scrim：通用 .scrim 是抽屉遮罩，带 opacity/visibility/z-index，
+   曾经因此把这个压暗层变成「opacity: 0 + visibility: hidden + z-index: 60」的隐形层。 */
+.entry-cover .cover-shade {
+  position: absolute; inset: 0;
+  z-index: 1;
+  background: var(--color-scrim);
+  pointer-events: none;              /* 不参与点击：整张封面仍是通往文章的一张大链接 */
+}
 .entry-cover .cap {
   position: absolute; left: 0; right: 0; bottom: 0;
+  z-index: 2;                        /* 必须在图片与压暗层之上 */
   padding: clamp(18px, 3vw, 34px);
   display: grid; gap: 10px; max-width: 780px;
+  pointer-events: none;              /* 叠字块只留链接可点，空白处穿透到封面链接 */
 }
+.entry-cover .cap a { pointer-events: auto; }
 .entry-cover .cap .entry-meta,
 .entry-cover .cap .entry-title,
 .entry-cover .cap .entry-excerpt { color: var(--color-on-scrim); }
 .entry-cover .cap .entry-meta .cat { color: var(--color-on-scrim); }
 .entry-cover .cap .entry-title a:hover { color: var(--color-selection); }
 .entry-cover .cap .sep { background: var(--color-scrim-line); }
-.entry-cover .scrim {
-  position: absolute; inset: 0;
-  background: var(--color-scrim);
-}
 
 /* 版式：图片区尺寸
    「单图」与「通栏大图」共用 --ratio-single，因此首页所有「只有一张图」的单元高度一致；
