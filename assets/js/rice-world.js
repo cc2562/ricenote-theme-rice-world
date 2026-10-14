@@ -709,6 +709,38 @@
     updateProgress();
   }
 
+  /* ── 页面级 <html> 属性同步 ──────────────────────────────────────────
+     Swup 只替换容器的内容，从不更新 <html> 上的属性，因此 data-page 之类的页面级
+     标记会一直停在「进入站点时那一页」。而页面级 CSS 差异正是挂在它们上面的
+     （例如悬浮 INDEX：首页对齐刊头首行、文章页对齐页头），不刷新就会错位。
+     只同步模板会在每页输出的属性；data-theme / data-size 是访客在本地的选择，
+     由脚本按 localStorage 维护，不在同步范围内（否则换页会把访客的选择改掉）。 */
+  var HTML_ATTRS = ['lang', 'data-page', 'data-font', 'data-default-theme', 'data-default-size',
+    'data-motion', 'data-lazy', 'data-ph-fit', 'data-fade', 'data-eager',
+    'data-ratio-single', 'data-ratio-cover', 'data-avatar', 'data-avatar-style',
+    'data-site-origin', 'data-site-logo', 'data-index-pos'];
+
+  /**
+   * source 可以是已经解析好的 Document（有 documentElement），
+   * 也可以是 swup 的 Page 对象（形如 `{ url, html }`）。
+   */
+  function syncHtmlAttributes(source) {
+    if (!source) { return; }
+    var next = source.documentElement || null;
+    if (!next && source.html) {
+      if (typeof window.DOMParser !== 'function') { return; }
+      try { next = new window.DOMParser().parseFromString(source.html, 'text/html').documentElement; }
+      catch (error) { return; }
+    }
+    if (!next) { return; }
+    var current = document.documentElement;
+    HTML_ATTRS.forEach(function (name) {
+      var value = next.getAttribute(name);
+      if (value === null) { current.removeAttribute(name); return; }
+      if (current.getAttribute(name) !== value) { current.setAttribute(name, value); }
+    });
+  }
+
   /* ── Swup 4：站内导航的唯一负责人 ─────────────────────────────────── */
   function bootSwup() {
     if (!window.Swup || !document.querySelector('#swup')) { return null; }
@@ -724,6 +756,12 @@
       return null;
     }
     root.classList.add('rw-swup');
+    /* 内容刚被替换时同步页面级属性：早于过渡与首屏呈现，不会闪一下。
+       swup 4 用 `(visit, { page })` 调用回调（page 形如 `{ url, html }`），
+       `visit.to` 指向同一份目标页面；两条路都认，避免依赖单一内部字段。 */
+    swup.hooks.on('content:replace', function (visit, payload) {
+      syncHtmlAttributes((payload && payload.page) || (visit && visit.to));
+    });
     if (window.SwupHeadPlugin) {
       /* 单独挂载：Head 插件（同步 title/OG）出错时不能连带把页面过渡一起废掉 */
       try { swup.use(new window.SwupHeadPlugin()); }
