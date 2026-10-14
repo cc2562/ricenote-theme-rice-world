@@ -322,6 +322,17 @@
 
   /* ── 统一事件委托（只绑定一次） ────────────────────────────────────── */
   document.addEventListener('click', function (event) {
+    /* 页头返回键：优先回到上一个页面（Swup 走它自己的 popstate，历史回退同样生效）。
+       没有可回退的历史（直接打开链接 / 新标签页进入）时退回锚点自己的 href（首页），
+       所以禁用脚本时这一入口照旧可用。带修饰键的点击放行给浏览器（新标签页打开首页）。 */
+    var backLink = event.target.closest('[data-head-back]');
+    if (backLink && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+      event.preventDefault();
+      if (window.history.length > 1) { window.history.back(); }
+      else { window.location.href = backLink.getAttribute('href') || '/'; }
+      return;
+    }
+
     var opener = event.target.closest('[data-drawer-open]');
     if (opener) {
       event.preventDefault();

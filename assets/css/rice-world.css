@@ -701,19 +701,22 @@ html[data-motion="off"] .reader-head { transition: none; }
   min-height: var(--header-h);
   padding-block: var(--space-2);
 }
+/* 返回键与标题是两个独立链接：返回键回上一个页面，标题回首页（见 header-compact.njk） */
+.reader-back {
+  width: 36px; height: 36px; display: grid; place-items: center; flex: none;
+  border: 1px solid var(--color-divider); border-radius: var(--radius-control);
+  transition: border-color var(--duration-fast) var(--ease-editorial),
+              background var(--duration-fast) var(--ease-editorial);
+}
+.reader-back:hover { border-color: var(--color-text-muted); background: var(--color-surface-soft); }
+.reader-back:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.reader-back svg { width: 16px; height: 16px; }
 .reader-brand {
-  display: inline-flex; align-items: center; gap: 10px;
+  display: inline-flex; align-items: center;
   min-width: 0;                    /* 允许被压缩：窄屏时让标题渐隐，而不是把顶栏挤成两行 */
   font-family: var(--font-serif); font-size: 20px; font-weight: 600;
   letter-spacing: -.01em;
 }
-.reader-brand .back {
-  width: 36px; height: 36px; display: grid; place-items: center; flex: none;
-  border: 1px solid var(--color-divider); border-radius: var(--radius-control);
-  transition: border-color var(--duration-fast) var(--ease-editorial);
-}
-.reader-brand:hover .back { border-color: var(--color-text-muted); }
-.reader-brand .back svg { width: 16px; height: 16px; }
 /* 站名 / 文章标题：只占一行，溢出时从右向左渐隐（而不是截断成省略号）。
    .is-clipped 由脚本按真实溢出量加 —— 常开会让短标题的末字也被削淡；
    完整文字始终在 DOM 与无障碍树上，屏幕阅读器读到的是全文。 */
