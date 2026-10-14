@@ -1,0 +1,16 @@
+{#
+  悬浮 INDEX：全站唯一的目录入口（首页刊头与文章页紧凑 Header 都不再各排一份）。
+
+  - 放在 #swup 之外：换页时不需要重建，也不会被页面过渡的 transform 影响，
+    因此「随时打开目录」在首页与文章页表现完全一致；
+  - 固定定位后不受页头布局影响：窄屏页头会改成纵向堆叠，过去那个按钮会因此跑到左侧；
+  - 位置由主题设置 `floatingIndexPosition` 决定（右下 / 右上），CSS 只按白名单取值匹配；
+  - 抽屉打开时淡出并让出点击（html.drawer-open），不与抽屉抢注意力。
+#}
+<button class="index-trigger index-fab" type="button" data-drawer-open="index"
+        aria-expanded="false" aria-controls="index-drawer" aria-label="打开站点目录" title="站点目录">
+  <span class="index-fab-label">Index</span>
+  <span class="index-glyph" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+  </span>
+</button>

@@ -83,6 +83,8 @@
     lastTrigger = trigger || null;
     el.classList.add('is-open');
     el.removeAttribute('inert');
+    /* 让悬浮 INDEX 淡出：抽屉与它抢同一条视线（CSS 只看这个类，不认抽屉名） */
+    document.documentElement.classList.add('drawer-open');
     var scrim = document.querySelector('[data-scrim]');
     if (scrim) { scrim.classList.add('is-open'); }
     lockScroll();
@@ -101,6 +103,7 @@
     });
     var scrim = document.querySelector('[data-scrim]');
     if (scrim) { scrim.classList.remove('is-open'); }
+    document.documentElement.classList.remove('drawer-open');
     document.querySelectorAll('[data-drawer-open]').forEach(function (btn) {
       btn.setAttribute('aria-expanded', 'false');
     });
@@ -455,114 +458,93 @@
   window.addEventListener('resize', function () { measureProse(); onScroll(); }, { passive: true });
   window.addEventListener('hashchange', onScroll);
 
-  /* ── 评论头像：按评论者邮箱生成（只发送哈希，不发送原文） ────────────
-     邮箱不在评论标记里（插件为隐私不输出它），但公开接口 GET /api/comments
-     的返回项包含 authorEmail，因此这里拉一次数据、按 id 把头像补到每条评论左侧。
-     接口不可用 / 未开启头像 / 没有评论时都静默跳过，不影响阅读。 */
-  var commentAvatars = {};
+  /* ── 评论头像：由昵称与作者网址派生（插件不提供邮箱） ──────────────────
+     rice.comments 为隐私刻意不输出评论者邮箱（公开接口 GET /api/comments 也只给
+     id / authorName / authorUrl），而 Gravatar / weavatar 这类服务必须用邮箱哈希，
+     因此邮箱方案在这套契约下永远拿不到头像。主题改用标记里现成的两项：
+       · letter（默认）：昵称首字 + 由昵称决定的低饱和底色，离线、零外部请求；
+       · site：优先用评论者站点图标，本站作者（网址与站点同源）用站点 LOGO。
+     两种模式都退回首字，取不到图时不会留下坏图。头像纯装饰（aria-hidden），
+     作者名仍是文本；脚本不可用时评论完全可读，只是没有头像。 */
+  var AVATAR_TONES = 4;
 
-  /** 标准 MD5（浏览器没有内置实现；weavatar 与 Gravatar 都用邮箱的 MD5 十六进制） */
-  function md5Hex(input) {
-    var message = new TextEncoder().encode(String(input));
-    var originalLength = message.length;
-    var totalLength = (((originalLength + 8) >> 6) + 1) << 6;
-    var buffer = new Uint8Array(totalLength);
-    buffer.set(message);
-    buffer[originalLength] = 0x80;
-    var bits = originalLength * 8;
-    buffer[totalLength - 8] = bits & 0xff;
-    buffer[totalLength - 7] = (bits >>> 8) & 0xff;
-    buffer[totalLength - 6] = (bits >>> 16) & 0xff;
-    buffer[totalLength - 5] = (bits >>> 24) & 0xff;
-
-    var shifts = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
-    var constants = [];
-    for (var k = 0; k < 64; k += 1) {
-      constants[k] = Math.floor(Math.abs(Math.sin(k + 1)) * 4294967296);
-    }
-
-    var a = 0x67452301;
-    var b = 0xefcdab89;
-    var c = 0x98badcfe;
-    var d = 0x10325476;
-
-    for (var offset = 0; offset < totalLength; offset += 64) {
-      var words = [];
-      for (var w = 0; w < 16; w += 1) {
-        words[w] = buffer[offset + w * 4] | (buffer[offset + w * 4 + 1] << 8)
-          | (buffer[offset + w * 4 + 2] << 16) | (buffer[offset + w * 4 + 3] << 24);
-      }
-      var aa = a;
-      var bb = b;
-      var cc = c;
-      var dd = d;
-      for (var i = 0; i < 64; i += 1) {
-        var f;
-        var g;
-        if (i < 16) { f = (bb & cc) | (~bb & dd); g = i; }
-        else if (i < 32) { f = (dd & bb) | (~dd & cc); g = (5 * i + 1) % 16; }
-        else if (i < 48) { f = bb ^ cc ^ dd; g = (3 * i + 5) % 16; }
-        else { f = cc ^ (bb | ~dd); g = (7 * i) % 16; }
-        f = (f + aa + constants[i] + words[g]) | 0;
-        aa = dd; dd = cc; cc = bb;
-        var shift = shifts[(i >> 4) * 4 + (i % 4)];
-        bb = (bb + ((f << shift) | (f >>> (32 - shift)))) | 0;
-      }
-      a = (a + aa) | 0; b = (b + bb) | 0; c = (c + cc) | 0; d = (d + dd) | 0;
-    }
-
-    var toHex = function (value) {
-      var out = '';
-      for (var index = 0; index < 4; index += 1) {
-        out += ('0' + ((value >>> (index * 8)) & 0xff).toString(16)).slice(-2);
-      }
-      return out;
-    };
-    return toHex(a) + toHex(b) + toHex(c) + toHex(d);
+  /** 取昵称首个字形：按码点切分，避免把代理对（emoji）切成半个字符 */
+  function firstGlyph(name) {
+    var text = String(name || '').replace(/^\s+|\s+$/g, '');
+    if (!text) { return '?'; }
+    var chars = typeof Array.from === 'function' ? Array.from(text) : text.split('');
+    var head = chars[0] || '?';
+    return head.toUpperCase ? head.toUpperCase() : head;
   }
 
-  function injectAvatars(root, map) {
-    var base = attr('data-avatar-base', 'https://weavatar.com/avatar/');
-    Array.prototype.forEach.call(root.querySelectorAll('.rn-comment[id^="comment-"]'), function (item) {
-      var email = map[item.id.replace('comment-', '')];
-      if (!email || item.querySelector('.rn-comment__avatar')) { return; }
-      var image = document.createElement('img');
-      image.className = 'rn-comment__avatar';
-      image.alt = '';
-      image.width = 44;
-      image.height = 44;
-      image.loading = 'lazy';
-      image.decoding = 'async';
-      image.src = base + md5Hex(String(email).trim().toLowerCase()) + '?d=mp&s=88';
-      image.onerror = function () { image.remove(); item.classList.remove('has-avatar'); };
-      item.insertBefore(image, item.firstChild);
-      item.classList.add('has-avatar');
-    });
+  /** 由昵称派生的稳定色号：同一个人每次都落在同一档 */
+  function toneOf(name) {
+    var text = String(name || '');
+    var hash = 0;
+    for (var i = 0; i < text.length; i += 1) {
+      hash = (hash * 31 + text.charCodeAt(i)) % 100003;
+    }
+    return hash % AVATAR_TONES;
+  }
+
+  /** 取 URL 的来源部分；非法地址返回空串（不抛错） */
+  function originOf(url) {
+    try {
+      return new URL(url, window.location.href).origin;
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function avatarNode(name, url) {
+    var box = document.createElement('span');
+    box.className = 'rn-comment__avatar is-letter';
+    box.setAttribute('data-rn-avatar', '');
+    box.setAttribute('aria-hidden', 'true');
+    box.setAttribute('data-tone', String(toneOf(name)));
+    box.textContent = firstGlyph(name);
+
+    var siteOrigin = originOf(attr('data-site-origin', ''));
+    var logo = attr('data-site-logo', '');
+    var origin = url ? originOf(url) : '';
+    var source = '';
+    if (origin && siteOrigin && origin === siteOrigin) {
+      source = logo;                              // 本站作者：用站点 LOGO，不请求外部
+    } else if (origin && attr('data-avatar-style', 'letter') === 'site') {
+      source = origin + '/favicon.ico';           // 评论者自己的站点图标
+    }
+    if (!source) { return box; }
+
+    var image = document.createElement('img');
+    image.alt = '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.width = 44;
+    image.height = 44;
+    image.src = source;
+    image.onerror = function () {                 // 取不到：退回昵称首字，不留坏图
+      image.remove();
+      box.textContent = firstGlyph(name);
+      box.classList.add('is-letter');
+    };
+    box.classList.remove('is-letter');
+    box.appendChild(image);
+    return box;
   }
 
   function initCommentAvatars() {
     var root = document.querySelector('[data-rn-comments]');
     if (!root || attr('data-avatar', 'on') === 'off') { return; }
-    if (!root.querySelector('.rn-comment')) { return; }
-    var form = root.querySelector('.rn-comments__form[data-post-id]');
-    var postId = form ? form.getAttribute('data-post-id') : '';
-    if (!postId || typeof window.fetch !== 'function') { return; }
-    if (commentAvatars[postId]) { injectAvatars(root, commentAvatars[postId]); return; }
-
-    window.fetch('/api/comments?postId=' + encodeURIComponent(postId), {
-      headers: { accept: 'application/json' }
-    }).then(function (response) {
-      return response.ok ? response.json() : null;
-    }).then(function (payload) {
-      if (!payload || !Array.isArray(payload.data)) { return; }
-      var map = {};
-      payload.data.forEach(function (item) {
-        if (item && item.id != null && item.authorEmail) { map[String(item.id)] = item.authorEmail; }
-      });
-      commentAvatars[postId] = map;
-      var current = document.querySelector('[data-rn-comments]');
-      if (current) { injectAvatars(current, map); }
-    }).catch(function () { /* 接口不可用时静默保持无头像 */ });
+    Array.prototype.forEach.call(root.querySelectorAll('.rn-comment[id^="comment-"]'), function (item) {
+      /* 幂等：Swup 换页后标记会重建，只有重建的才缺头像；已注入的直接跳过 */
+      if (item.querySelector('[data-rn-avatar]')) { return; }
+      var author = item.querySelector('.rn-comment__author');
+      var reply = item.querySelector('[data-rn-reply]');
+      var name = (author && author.textContent) || (reply && reply.getAttribute('data-author')) || '';
+      var link = author && author.tagName === 'A' ? author.getAttribute('href') : '';
+      item.insertBefore(avatarNode(name, link), item.firstChild);
+      item.classList.add('has-avatar');
+    });
   }
 
   /* ── 启动（可重复调用：首次加载与 Swup 每次替换后都走这里） ─────────── */

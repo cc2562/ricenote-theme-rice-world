@@ -3,7 +3,7 @@
   "id": "rice.world",
   "name": "Rice World",
   "description": "Rice World：无边框编辑式个人刊物主题。首页以「一篇文章 = 一个版面单元」呈现，支持 0–4 张图片的七种拼版；文章页为紧凑顶栏的沉浸阅读，含目录抽屉、阅读进度、字号与主题切换、图片懒加载与加载中占位图、友情链接页、短代码与 Swup 页面过渡。配色、版式、图片加载与页脚文案都可在后台「外观中心 → 主题设置」调整。",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "apiVersion": "^1.0.0",
   "engine": "nunjucks",
   "author": "Rice World",
@@ -348,14 +348,18 @@
         "commentAvatar": {
           "type": "boolean",
           "label": { "zh-CN": "显示评论头像", "en": "Show comment avatars" },
-          "description": { "zh-CN": "按评论者邮箱生成头像，请求只携带邮箱的哈希，不发送原文", "en": "Avatars are requested with the email hash only, never the raw address" },
+          "description": { "zh-CN": "插件为隐私不输出评论者邮箱，因此头像从昵称与作者网址生成；首字头像不发起任何外部请求", "en": "The plugin exposes no email, so avatars are derived from the nickname and author URL; letter avatars make no external requests" },
           "default": true
         },
-        "commentAvatarBase": {
-          "type": "url",
-          "label": { "zh-CN": "头像服务地址", "en": "Avatar service URL" },
-          "description": { "zh-CN": "默认走 weavatar 镜像站；地址末尾需要带斜杠", "en": "weavatar mirror by default; keep the trailing slash" },
-          "default": "https://weavatar.com/avatar/"
+        "commentAvatarStyle": {
+          "type": "select",
+          "label": { "zh-CN": "头像样式", "en": "Avatar style" },
+          "description": { "zh-CN": "「站点图标」会向评论者自己的站点取一次 favicon（同源作者用站点 LOGO），取不到时自动退回昵称首字", "en": "\"Site icon\" fetches a favicon from the commenter's own site (same-origin authors use the site logo) and falls back to the initial" },
+          "default": "letter",
+          "options": [
+            { "value": "letter", "label": { "zh-CN": "昵称首字（无外部请求）", "en": "Nickname initial (no external request)" } },
+            { "value": "site", "label": { "zh-CN": "评论者站点图标", "en": "Commenter's site icon" } }
+          ]
         }
       }
     },
@@ -385,6 +389,16 @@
           "label": { "zh-CN": "目录面板页脚文字", "en": "Index panel footnote" },
           "default": "写完了就发，没有固定的更新频率。",
           "maxLength": 160
+        },
+        "floatingIndexPosition": {
+          "type": "select",
+          "label": { "zh-CN": "悬浮 INDEX 位置", "en": "Floating INDEX position" },
+          "description": { "zh-CN": "首页与文章页共用同一个悬浮入口；选「右上」时自动避开吸顶页头，窄屏只显示图标", "en": "One floating entry shared by every page; the top-right option keeps clear of the sticky header" },
+          "default": "bottom-right",
+          "options": [
+            { "value": "bottom-right", "label": { "zh-CN": "右下角（推荐）", "en": "Bottom right (recommended)" } },
+            { "value": "top-right", "label": { "zh-CN": "右上角", "en": "Top right" } }
+          ]
         }
       }
     },

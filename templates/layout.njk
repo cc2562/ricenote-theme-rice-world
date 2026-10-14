@@ -29,7 +29,11 @@
       data-ratio-single="{{ theme.settings.homeSingleRatio or '16 / 9' }}"
       data-ratio-cover="{{ theme.settings.homeCoverRatio or '20 / 9' }}"
       data-avatar="{{ 'on' if theme.settings.commentAvatar != false else 'off' }}"
-      data-avatar-base="{{ theme.settings.commentAvatarBase or 'https://weavatar.com/avatar/' }}">
+      data-avatar-style="{{ theme.settings.commentAvatarStyle or 'letter' }}"
+      {#- 头像只由标记里现成的两项派生：同源作者用站点 LOGO，其余看「头像样式」 -#}
+      data-site-origin="{{ site.url }}"
+      data-site-logo="{{ site.logoUrl or '' }}"
+      data-index-pos="{{ theme.settings.floatingIndexPosition or 'bottom-right' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -105,6 +109,9 @@
   {% include "partials/toc-panel.njk" %}
   {% include "partials/reading-tools.njk" %}
   {% include "partials/image-lightbox.njk" %}
+
+  {# 悬浮 INDEX 也留在替换区之外：它全站唯一、不需要随页重建，换页时不会闪一下 #}
+  {% include "partials/index-fab.njk" %}
 
   {{ slot('body.end') }}
 

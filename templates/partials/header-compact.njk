@@ -2,9 +2,10 @@
   紧凑 Header：文章页与所有次级页面共用。
 
   - 左侧返回入口指向首页（明确路径，直达页面时同样合理）；
-  - 文章页右侧为 目录 / 阅读设置 / INDEX，均按主题设置显隐；
+  - 文章页右侧为 目录 / 阅读设置，均按主题设置显隐；
   - 阅读设置只用一个齿轮图标（文案在「阅读设置」抽屉里），避免顶栏过长；
-  - INDEX 与首页刊头复用同一套 `.index-trigger` 样式与图标，两处入口观感一致；
+  - INDEX 不在这里：全站只有一个悬浮入口（partials/index-fab.njk），
+    页头不再重复排一份相同菜单；
   - 复制链接不放在顶栏（顶栏空间留给导航），改在「阅读设置」抽屉里提供；
   - 底边进度线只在文章页出现，进度只统计正文区域。
 #}
@@ -30,12 +31,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
         {% endif %}
-        <button class="index-trigger" type="button" data-drawer-open="index" aria-expanded="false" aria-controls="index-drawer">
-          <span>Index</span>
-          <span class="index-glyph" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-          </span>
-        </button>
       </div>
     </div>
   </div>

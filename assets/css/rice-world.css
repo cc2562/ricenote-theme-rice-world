@@ -258,6 +258,48 @@ hr { border: 0; border-top: 1px solid var(--color-divider); margin: 0; }
 }
 .index-trigger .index-glyph svg { width: 14px; height: 14px; }
 
+/* 悬浮 INDEX：全站唯一的目录入口，首页与文章页共用同一个（partials/index-fab.njk）。
+   固定定位后不受页头布局影响 —— 窄屏页头改成纵向堆叠时，过去那个按钮会被推到左侧。
+   z-index 夹在吸顶页头（40）与抽屉遮罩（60）之间；抽屉打开时淡出并让出点击。 */
+.index-fab {
+  position: fixed;
+  right: var(--page-gutter);
+  bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  min-height: 46px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-bg) 82%, transparent);
+  backdrop-filter: blur(12px) saturate(1.08);
+  box-shadow: 0 2px 12px var(--color-shadow);
+  transition: opacity var(--duration-page) var(--ease-editorial),
+              transform var(--duration-page) var(--ease-editorial),
+              border-color var(--duration-fast) var(--ease-editorial),
+              background var(--duration-fast) var(--ease-editorial);
+}
+.index-fab:hover {
+  background: color-mix(in oklab, var(--color-bg) 94%, transparent);
+  border-color: var(--color-text-muted);
+}
+.index-fab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+/* 右上：避开吸顶的紧凑页头（≈64px），不让两组控件叠在一起 */
+html[data-index-pos="top-right"] .index-fab {
+  top: calc(78px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+}
+html.drawer-open .index-fab {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) { .index-fab { transition: none; } }
+html[data-motion="off"] .index-fab { transition: none; }
+@media (max-width: 600px) {
+  /* 窄屏只留图标：悬浮块不遮挡正文 */
+  .index-fab { padding: 8px; }
+  .index-fab-label { display: none; }
+}
+
 .masthead-title {
   font-family: var(--font-serif);
   font-size: var(--fs-display);
@@ -994,7 +1036,7 @@ html[data-ratio-cover="2 / 1"] { --ratio-cover: 2 / 1; }
 }
 
 @media print {
-  .masthead-bar, .reader-head, .site-foot, .comments, .lightbox, .scrim, .drawer { display: none; }
+  .masthead-bar, .reader-head, .site-foot, .comments, .lightbox, .scrim, .drawer, .index-fab { display: none; }
   .transition-main { opacity: 1 !important; transform: none !important; }
   body { font-size: 12pt; }
 }
@@ -1102,16 +1144,11 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
 .foot-social a { font-size: var(--fs-small); color: var(--color-text-muted); transition: color var(--duration-fast) linear; }
 .foot-social a:hover { color: var(--color-text); }
 .foot-widgets { padding-block: var(--space-8) var(--space-6); border-bottom: 1px solid var(--color-divider); }
-.masthead-actions { display: flex; align-items: center; gap: var(--space-4); flex: none; }
-/* 页头只留 INDEX 入口：导航项统一在抽屉里（样式见 .index-list 一节），
-   因此这里不再有横向导航的规则 */
+/* 页头不排任何导航入口：菜单统一在 INDEX 抽屉里，入口是悬浮按钮（见 .index-fab） */
 /* 只有图标的按钮（阅读设置）：保持 44×44 触控尺寸，不撑宽顶栏 */
 .btn-icon { padding-inline: 0; width: 44px; justify-content: center; }
 .btn-icon svg { width: 19px; height: 19px; }
 @media (max-width: 600px) {
-  /* 窄屏顶栏只保留 INDEX 的图标，避免与目录/设置挤在一起 */
-  .reader-tools .index-trigger > span:first-child { display: none; }
-  .reader-tools .index-trigger { padding-inline: 6px; }
   /* 顶栏按钮一律不参与压缩：文字隐去后仍要保持 44×44 的触控尺寸 */
   .reader-tools > * { flex: none; }
   .reader-tools .btn-quiet { width: 44px; padding-inline: 0; justify-content: center; }
@@ -1148,13 +1185,27 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
 .rn-comment { position: relative; margin: 0; }
 /* 有头像时才让出左侧空间（没有头像时不留下空档） */
 .rn-comment.has-avatar { padding-left: 60px; }
+/* 头像盒：既承载昵称首字，也承载一张图（站点图标 / 站点 LOGO）。
+   插件不输出邮箱，所以头像不是「加载失败」而是「由昵称派生」，永远不会出坏图。 */
 .rn-comment__avatar {
   position: absolute; left: 0; top: 2px;
   width: 44px; height: 44px;
   border-radius: 50%;
-  object-fit: cover;
+  overflow: hidden;
+  display: grid; place-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  line-height: 1;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--color-accent) 74%, var(--color-text));
   background: var(--color-surface-soft);
+  user-select: none;
 }
+.rn-comment__avatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
+/* 首字底色按昵称哈希在 4 档低饱和色之间轮转（同一个人每次都是同一档） */
+.rn-comment__avatar[data-tone="1"] { background: color-mix(in oklab, var(--color-accent) 14%, var(--color-surface-soft)); }
+.rn-comment__avatar[data-tone="2"] { background: color-mix(in oklab, var(--color-accent-soft) 24%, var(--color-surface-soft)); }
+.rn-comment__avatar[data-tone="3"] { background: color-mix(in oklab, var(--color-text) 8%, var(--color-surface-soft)); }
 .rn-comment__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
 .rn-comment__author { font-size: var(--fs-small); font-weight: 600; }
 .rn-comment__time {
