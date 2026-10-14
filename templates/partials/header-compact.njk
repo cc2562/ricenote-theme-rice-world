@@ -18,7 +18,6 @@
         </span>
         <span>{{ site.title }}.</span>
       </a>
-      <div class="reader-nav">{{ slot('header.navigation') }}</div>
       <div class="reader-tools">
         {% if isPost and theme.settings.showToc %}
           <button class="btn btn-quiet" type="button" data-drawer-open="toc" aria-expanded="false" aria-controls="toc-drawer" aria-label="文章目录">

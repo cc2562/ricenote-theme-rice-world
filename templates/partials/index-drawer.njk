@@ -16,7 +16,13 @@
     </button>
   </div>
   <div class="drawer-body">
-    <nav class="index-list" aria-label="站点导航">
+    {#
+      #index-nav 是 Swup 的第二个替换容器：抽屉在 #swup 之外（见 layout.njk 的说明），
+      不注册成容器的话，客户端换页后这里的 aria-current 会停留在首屏那一份，
+      于是「当前页指示」永远指向进入站点时的页面。
+      当前项由导航插件在服务端判定（精确路径比对），主题不自己再算一遍。
+    #}
+    <nav class="index-list" id="index-nav" aria-label="站点导航">
       {% if navSlot and navSlot.length %}
         {{ navSlot }}
       {% else %}

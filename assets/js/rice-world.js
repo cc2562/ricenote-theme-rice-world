@@ -592,7 +592,10 @@
     if (!window.Swup || !document.querySelector('#swup')) { return null; }
     var swup;
     try {
-      swup = new window.Swup({ containers: ['#swup'] });
+      /* #index-nav 是抽屉里的导航列表：它必须一起被替换，
+         否则「当前页」标记会停留在首屏那一份（抽屉在 #swup 之外）。
+         插件在服务端按精确路径判定当前项，这里只负责让它的结果保持最新。 */
+      swup = new window.Swup({ containers: ['#swup', '#index-nav'] });
     } catch (error) {
       /* Swup 起不来就退回原生导航，页面功能不受影响 */
       if (window.console && window.console.warn) { window.console.warn('[rice.world] Swup 初始化失败，已回退原生导航', error); }

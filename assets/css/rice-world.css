@@ -1103,26 +1103,11 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
 .foot-social a:hover { color: var(--color-text); }
 .foot-widgets { padding-block: var(--space-8) var(--space-6); border-bottom: 1px solid var(--color-divider); }
 .masthead-actions { display: flex; align-items: center; gap: var(--space-4); flex: none; }
-.masthead-nav, .reader-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
-.masthead-nav .rn-nav-link,
-.reader-nav .rn-nav-link {
-  font-size: var(--fs-small);
-  color: var(--color-text-muted);
-  transition: color var(--duration-fast) linear;
-}
-.masthead-nav .rn-nav-link:hover,
-.reader-nav .rn-nav-link:hover { color: var(--color-accent); }
-.masthead-nav a[aria-current="page"],
-.reader-nav a[aria-current="page"],
-.masthead-nav .rn-nav-link--active,
-.reader-nav .rn-nav-link--active { color: var(--color-accent); }
+/* 页头只留 INDEX 入口：导航项统一在抽屉里（样式见 .index-list 一节），
+   因此这里不再有横向导航的规则 */
 /* 只有图标的按钮（阅读设置）：保持 44×44 触控尺寸，不撑宽顶栏 */
 .btn-icon { padding-inline: 0; width: 44px; justify-content: center; }
 .btn-icon svg { width: 19px; height: 19px; }
-@media (max-width: 920px) {
-  /* 移动端收起页头导航：INDEX 抽屉里用的是同一份导航插槽 */
-  .reader-nav { display: none; }
-}
 @media (max-width: 600px) {
   /* 窄屏顶栏只保留 INDEX 的图标，避免与目录/设置挤在一起 */
   .reader-tools .index-trigger > span:first-child { display: none; }
