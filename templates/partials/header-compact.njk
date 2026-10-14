@@ -2,14 +2,19 @@
   紧凑 Header：文章页与所有次级页面共用。
 
   - 左侧返回入口指向首页（明确路径，直达页面时同样合理）；
+  - 左侧文字：文章页显示**文章标题**（读者关心的是「我在读什么」，重复一遍站名没有信息量），
+    其余页面显示站点名。文字只占一行，太长时向右渐隐，绝不换行把顶栏撑高（渐隐见 rice-world.js 的 fitHeadTitle）；
   - 文章页右侧为 目录 / 阅读设置，均按主题设置显隐；
   - 阅读设置只用一个齿轮图标（文案在「阅读设置」抽屉里），避免顶栏过长；
   - INDEX 不在这里：全站只有一个悬浮入口（partials/index-fab.njk），
     页头不再重复排一份相同菜单；
   - 复制链接不放在顶栏（顶栏空间留给导航），改在「阅读设置」抽屉里提供；
+  - 下滑时整条页头收起、上滑回来（transform 不参与布局，正文不跳动）；
   - 底边进度线只在文章页出现，进度只统计正文区域。
 #}
 {% set isPost = page.kind == 'post' %}
+{% set isPostTitle = (isPost and post and post.title) %}
+{% set headText = (post.title if isPostTitle else site.title) %}
 <header class="reader-head" id="reader-head">
   <div class="shell">
     <div class="reader-bar">
@@ -17,7 +22,8 @@
         <span class="back" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </span>
-        <span>{{ site.title }}.</span>
+        {# 文章标题不缀句点（标题自带语义），站点名保留原有的句点 #}
+        <span class="reader-brand-text" data-head-text>{{ headText }}{% if not isPostTitle %}.{% endif %}</span>
       </a>
       <div class="reader-tools">
         {% if isPost and theme.settings.showToc %}

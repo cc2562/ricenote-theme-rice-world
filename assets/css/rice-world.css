@@ -687,7 +687,15 @@ html[data-ratio-cover="2 / 1"] { --ratio-cover: 2 / 1; }
   position: sticky; top: 0; z-index: 40;
   background: color-mix(in oklab, var(--color-bg) 94%, transparent);
   backdrop-filter: blur(10px);
+  /* 下滑收起、上滑回来（.is-hidden 由脚本按滚动方向加）。
+     transform 不参与布局，收起时正文与进度线都不会跳动。 */
+  transition: transform var(--duration-page) var(--ease-editorial);
 }
+.reader-head.is-hidden { transform: translateY(-100%); }
+/* 键盘焦点回到页头时立刻拉回来，避免焦点留在屏幕外 */
+.reader-head.is-hidden:focus-within { transform: none; }
+@media (prefers-reduced-motion: reduce) { .reader-head { transition: none; } }
+html[data-motion="off"] .reader-head { transition: none; }
 .reader-bar {
   display: flex; align-items: center; gap: var(--space-4);
   min-height: var(--header-h);
@@ -695,17 +703,30 @@ html[data-ratio-cover="2 / 1"] { --ratio-cover: 2 / 1; }
 }
 .reader-brand {
   display: inline-flex; align-items: center; gap: 10px;
+  min-width: 0;                    /* 允许被压缩：窄屏时让标题渐隐，而不是把顶栏挤成两行 */
   font-family: var(--font-serif); font-size: 20px; font-weight: 600;
   letter-spacing: -.01em;
 }
 .reader-brand .back {
-  width: 36px; height: 36px; display: grid; place-items: center;
+  width: 36px; height: 36px; display: grid; place-items: center; flex: none;
   border: 1px solid var(--color-divider); border-radius: var(--radius-control);
   transition: border-color var(--duration-fast) var(--ease-editorial);
 }
 .reader-brand:hover .back { border-color: var(--color-text-muted); }
 .reader-brand .back svg { width: 16px; height: 16px; }
-.reader-tools { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
+/* 站名 / 文章标题：只占一行，溢出时从右向左渐隐（而不是截断成省略号）。
+   .is-clipped 由脚本按真实溢出量加 —— 常开会让短标题的末字也被削淡；
+   完整文字始终在 DOM 与无障碍树上，屏幕阅读器读到的是全文。 */
+.reader-brand-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.reader-brand-text.is-clipped {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent 100%);
+}
+.reader-tools { flex: none; margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
 .reader-tools .btn { white-space: nowrap; }
 .reader-tools .tool-label {
   font-family: var(--font-mono); font-size: var(--fs-micro);
@@ -1225,6 +1246,8 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
   /* 顶栏按钮一律不参与压缩：文字隐去后仍要保持 44×44 的触控尺寸 */
   .reader-tools > * { flex: none; }
   .reader-tools .btn-quiet { width: 44px; padding-inline: 0; justify-content: center; }
+  /* 窄屏标题降一档字号：同一行里能多留几个字，再开始渐隐 */
+  .reader-brand { font-size: 17px; gap: 8px; }
 }
 
 /* ── 22. 评论区（标记由 rice.comments 插件的 post.comments 插槽提供） ──

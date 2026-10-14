@@ -110,6 +110,8 @@
     if (any) { unlockScroll(); }
     if (any && !silent && lastTrigger && document.contains(lastTrigger)) { lastTrigger.focus(); }
     if (!silent) { lastTrigger = null; }
+    /* 关闭抽屉时复位页头状态：解锁滚动会把页面滚回原位，别让这次位移被当成「下滑」把页头收起来 */
+    resetHead();
   }
 
   /* ── 遮罩（抽屉与灯箱共用） ─────────────────────────────────────────── */
@@ -467,6 +469,49 @@
     openLightbox(node);
   });
 
+  /* ── 页头：标题溢出渐隐 / 下滑收起 ──────────────────────────────────── */
+  var headState = { last: 0, hidden: false };
+
+  /** 页头左侧文字只占一行：真溢出时才加渐隐，否则短标题的末字也会被削淡。
+      完整文字仍在 DOM 里，所以屏幕阅读器与复制到剪贴板拿到的都是全文。 */
+  function fitHeadTitle() {
+    var text = document.querySelector('[data-head-text]');
+    if (!text) { return; }
+    var clipped = text.scrollWidth - text.clientWidth > 1;
+    text.classList.toggle('is-clipped', clipped);
+    if (clipped) { text.setAttribute('title', (text.textContent || '').replace(/\s+/g, ' ').trim()); }
+    else { text.removeAttribute('title'); }
+  }
+
+  /** 下滑收起、上滑回来；回到顶部一定显示（6px 阈值过滤橡皮筋式抖动） */
+  function updateHeadVisibility() {
+    var head = document.querySelector('.reader-head');
+    if (!head) { return; }
+    var y = Math.max(0, window.pageYOffset);
+    var delta = y - headState.last;
+    if (Math.abs(delta) < 6) { return; }
+    headState.last = y;
+
+    var hidden = headState.hidden;
+    if (y <= 64) { hidden = false; }
+    else if (delta > 0) { hidden = true; }
+    else { hidden = false; }
+
+    if (hidden !== headState.hidden) {
+      headState.hidden = hidden;
+      head.classList.toggle('is-hidden', hidden);
+    }
+  }
+
+  /** 换页与关闭抽屉后复位：新页面从「页头可见」开始；
+      同时把基准位置对齐当前滚动值，避免解锁滚动产生的位移被误判成「下滑」。 */
+  function resetHead() {
+    headState.hidden = false;
+    headState.last = Math.max(0, window.pageYOffset);
+    var head = document.querySelector('.reader-head');
+    if (head) { head.classList.remove('is-hidden'); }
+  }
+
   /* ── 滚动 ──────────────────────────────────────────────────────────── */
   var ticking = false;
   function onScroll() {
@@ -474,11 +519,12 @@
     ticking = true;
     window.requestAnimationFrame(function () {
       updateProgress();
+      updateHeadVisibility();
       ticking = false;
     });
   }
   window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', function () { measureProse(); onScroll(); }, { passive: true });
+  window.addEventListener('resize', function () { measureProse(); fitHeadTitle(); onScroll(); }, { passive: true });
   window.addEventListener('hashchange', onScroll);
 
   /* ── 评论表单：JSON 提交、回复状态与结果提示 ──────────────────────────
@@ -828,6 +874,9 @@
     initCommentAvatars();
     scanImages();
     measureProse();
+    /* 换页后（Swup 会替换整段标记）页头是新的节点：复位可见状态并重测标题是否需要渐隐 */
+    resetHead();
+    fitHeadTitle();
     buildToc();
     updateProgress();
   }
