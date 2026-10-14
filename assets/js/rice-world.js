@@ -455,6 +455,116 @@
   window.addEventListener('resize', function () { measureProse(); onScroll(); }, { passive: true });
   window.addEventListener('hashchange', onScroll);
 
+  /* ── 评论头像：按评论者邮箱生成（只发送哈希，不发送原文） ────────────
+     邮箱不在评论标记里（插件为隐私不输出它），但公开接口 GET /api/comments
+     的返回项包含 authorEmail，因此这里拉一次数据、按 id 把头像补到每条评论左侧。
+     接口不可用 / 未开启头像 / 没有评论时都静默跳过，不影响阅读。 */
+  var commentAvatars = {};
+
+  /** 标准 MD5（浏览器没有内置实现；weavatar 与 Gravatar 都用邮箱的 MD5 十六进制） */
+  function md5Hex(input) {
+    var message = new TextEncoder().encode(String(input));
+    var originalLength = message.length;
+    var totalLength = (((originalLength + 8) >> 6) + 1) << 6;
+    var buffer = new Uint8Array(totalLength);
+    buffer.set(message);
+    buffer[originalLength] = 0x80;
+    var bits = originalLength * 8;
+    buffer[totalLength - 8] = bits & 0xff;
+    buffer[totalLength - 7] = (bits >>> 8) & 0xff;
+    buffer[totalLength - 6] = (bits >>> 16) & 0xff;
+    buffer[totalLength - 5] = (bits >>> 24) & 0xff;
+
+    var shifts = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
+    var constants = [];
+    for (var k = 0; k < 64; k += 1) {
+      constants[k] = Math.floor(Math.abs(Math.sin(k + 1)) * 4294967296);
+    }
+
+    var a = 0x67452301;
+    var b = 0xefcdab89;
+    var c = 0x98badcfe;
+    var d = 0x10325476;
+
+    for (var offset = 0; offset < totalLength; offset += 64) {
+      var words = [];
+      for (var w = 0; w < 16; w += 1) {
+        words[w] = buffer[offset + w * 4] | (buffer[offset + w * 4 + 1] << 8)
+          | (buffer[offset + w * 4 + 2] << 16) | (buffer[offset + w * 4 + 3] << 24);
+      }
+      var aa = a;
+      var bb = b;
+      var cc = c;
+      var dd = d;
+      for (var i = 0; i < 64; i += 1) {
+        var f;
+        var g;
+        if (i < 16) { f = (bb & cc) | (~bb & dd); g = i; }
+        else if (i < 32) { f = (dd & bb) | (~dd & cc); g = (5 * i + 1) % 16; }
+        else if (i < 48) { f = bb ^ cc ^ dd; g = (3 * i + 5) % 16; }
+        else { f = cc ^ (bb | ~dd); g = (7 * i) % 16; }
+        f = (f + aa + constants[i] + words[g]) | 0;
+        aa = dd; dd = cc; cc = bb;
+        var shift = shifts[(i >> 4) * 4 + (i % 4)];
+        bb = (bb + ((f << shift) | (f >>> (32 - shift)))) | 0;
+      }
+      a = (a + aa) | 0; b = (b + bb) | 0; c = (c + cc) | 0; d = (d + dd) | 0;
+    }
+
+    var toHex = function (value) {
+      var out = '';
+      for (var index = 0; index < 4; index += 1) {
+        out += ('0' + ((value >>> (index * 8)) & 0xff).toString(16)).slice(-2);
+      }
+      return out;
+    };
+    return toHex(a) + toHex(b) + toHex(c) + toHex(d);
+  }
+
+  function injectAvatars(root, map) {
+    var base = attr('data-avatar-base', 'https://weavatar.com/avatar/');
+    Array.prototype.forEach.call(root.querySelectorAll('.rn-comment[id^="comment-"]'), function (item) {
+      var email = map[item.id.replace('comment-', '')];
+      if (!email || item.querySelector('.rn-comment__avatar')) { return; }
+      var image = document.createElement('img');
+      image.className = 'rn-comment__avatar';
+      image.alt = '';
+      image.width = 44;
+      image.height = 44;
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      image.src = base + md5Hex(String(email).trim().toLowerCase()) + '?d=mp&s=88';
+      image.onerror = function () { image.remove(); item.classList.remove('has-avatar'); };
+      item.insertBefore(image, item.firstChild);
+      item.classList.add('has-avatar');
+    });
+  }
+
+  function initCommentAvatars() {
+    var root = document.querySelector('[data-rn-comments]');
+    if (!root || attr('data-avatar', 'on') === 'off') { return; }
+    if (!root.querySelector('.rn-comment')) { return; }
+    var form = root.querySelector('.rn-comments__form[data-post-id]');
+    var postId = form ? form.getAttribute('data-post-id') : '';
+    if (!postId || typeof window.fetch !== 'function') { return; }
+    if (commentAvatars[postId]) { injectAvatars(root, commentAvatars[postId]); return; }
+
+    window.fetch('/api/comments?postId=' + encodeURIComponent(postId), {
+      headers: { accept: 'application/json' }
+    }).then(function (response) {
+      return response.ok ? response.json() : null;
+    }).then(function (payload) {
+      if (!payload || !Array.isArray(payload.data)) { return; }
+      var map = {};
+      payload.data.forEach(function (item) {
+        if (item && item.id != null && item.authorEmail) { map[String(item.id)] = item.authorEmail; }
+      });
+      commentAvatars[postId] = map;
+      var current = document.querySelector('[data-rn-comments]');
+      if (current) { injectAvatars(current, map); }
+    }).catch(function () { /* 接口不可用时静默保持无头像 */ });
+  }
+
   /* ── 启动（可重复调用：首次加载与 Swup 每次替换后都走这里） ─────────── */
   function boot() {
     ensureScrim();
@@ -470,6 +580,7 @@
 
     initProseImages();
     initCodeBlocks();
+    initCommentAvatars();
     scanImages();
     measureProse();
     buildToc();
@@ -479,10 +590,22 @@
   /* ── Swup 4：站内导航的唯一负责人 ─────────────────────────────────── */
   function bootSwup() {
     if (!window.Swup || !document.querySelector('#swup')) { return null; }
-    var options = { containers: ['#swup'] };
-    if (window.SwupHeadPlugin) { options.plugins = [new window.SwupHeadPlugin()]; }
-    var swup = new window.Swup(options);
+    var swup;
+    try {
+      swup = new window.Swup({ containers: ['#swup'] });
+    } catch (error) {
+      /* Swup 起不来就退回原生导航，页面功能不受影响 */
+      if (window.console && window.console.warn) { window.console.warn('[rice.world] Swup 初始化失败，已回退原生导航', error); }
+      return null;
+    }
     root.classList.add('rw-swup');
+    if (window.SwupHeadPlugin) {
+      /* 单独挂载：Head 插件（同步 title/OG）出错时不能连带把页面过渡一起废掉 */
+      try { swup.use(new window.SwupHeadPlugin()); }
+      catch (error) {
+        if (window.console && window.console.warn) { window.console.warn('[rice.world] Head 插件挂载失败，页面过渡继续可用', error); }
+      }
+    }
     /* 页面进入后重新初始化页面模块；boot() 幂等，且监听器只有一套 */
     swup.hooks.on('page:view', function () {
       closeDrawers(true);

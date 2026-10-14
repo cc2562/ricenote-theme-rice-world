@@ -1,10 +1,13 @@
 {#
   文章单元的复用片段（宏）。宏的返回值不会被自动转义，因此适合输出标记。
   元数据与标题的排版在所有版式之间保持一致——这是设计规范的要求。
+
+  元数据只保留「分类 · 日期」：版式名称（纯文字/三图…）是后台的排版参数，
+  对读者没有信息量，因此不再出现在首页文章流里。
 #}
 {% import "partials/date-macros.njk" as dates with context %}
 
-{% macro meta(entry, layoutLabel) %}
+{% macro meta(entry) %}
   <div class="entry-meta">
     {% if entry.terms and entry.terms.length %}
       <span class="cat">{{ entry.terms[0].name }}</span>
@@ -12,9 +15,7 @@
     {% endif %}
     {% if entry.publishedAt %}
       <time datetime="{{ dates.iso(entry.publishedAt) }}">{{ dates.editorial(entry.publishedAt) }}</time>
-      <span class="sep" aria-hidden="true"></span>
     {% endif %}
-    <span>{{ layoutLabel }}</span>
   </div>
 {% endmacro %}
 

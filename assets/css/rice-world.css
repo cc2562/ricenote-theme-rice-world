@@ -48,7 +48,14 @@
   --radius-control: 8px;
   --duration-fast: 160ms;
   --duration-page: 260ms;
+  /* 页面转场：规范建议退出 120–180ms、进入 180–260ms */
+  --duration-exit: 150ms;
+  --duration-enter: 220ms;
   --ease-editorial: cubic-bezier(.22, 1, .36, 1);
+
+  /* 首页「只有一张图」的版式所用图片区比例（后台可改；白名单见文件末尾的 data-ratio-* 规则） */
+  --ratio-single: 16 / 9;
+  --ratio-cover: 20 / 9;
 
   --font-sans: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Hiragino Sans GB", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-serif: "Iowan Old Style", "Charter", "Georgia", "Songti SC", "Source Han Serif SC", "Noto Serif SC", "Times New Roman", serif;
@@ -202,6 +209,8 @@ hr { border: 0; border-top: 1px solid var(--color-divider); margin: 0; }
 }
 .btn-quiet { background: transparent; border-color: transparent; padding-inline: 10px; }
 .btn-quiet:hover { border-color: var(--color-divider); }
+/* 按钮内的图标统一尺寸：内联 <svg> 没有 width/height 时会被压成 0 宽（图标看不见） */
+.btn svg { width: 19px; height: 19px; flex: none; }
 .btn[aria-expanded="true"] { border-color: var(--color-accent); color: var(--color-accent); }
 
 .icon-btn {
@@ -328,7 +337,13 @@ hr { border: 0; border-top: 1px solid var(--color-divider); margin: 0; }
   letter-spacing: .1em;
   color: var(--color-text-muted);
 }
-.entry-head { display: grid; gap: clamp(18px, 2.4vw, 28px); }
+/* align-items: start 是硬保证：图片区高度只由比例决定，
+   不允许被右侧/下方的文字高度拉伸（否则同一版式会随摘要长短出现不同高度） */
+.entry-head {
+  display: grid;
+  gap: clamp(18px, 2.4vw, 28px);
+  align-items: start;
+}
 
 /* text 版式：更大字号与留白 */
 .entry--text { padding-top: clamp(64px, 8vw, 120px); }
@@ -406,10 +421,18 @@ a:hover > .slot::after,
   background: var(--color-scrim);
 }
 
-/* 版式：图片区尺寸（各槽比例与生成图形的 viewBox 严格一致，避免拉伸） */
-.media-hero { aspect-ratio: 21 / 9; }
-.media-single { aspect-ratio: 16 / 9; }
-.media-background { aspect-ratio: 20 / 9; }
+/* 版式：图片区尺寸
+   「单图」与「通栏大图」共用 --ratio-single，因此首页所有「只有一张图」的单元高度一致；
+   「背景封面」要承载叠字，单独用 --ratio-cover。取值来自后台，但只按下面的白名单匹配，
+   未知值自动落回 :root 的默认比例（不把后台字符串拼进样式）。 */
+.media-single,
+.media-hero { aspect-ratio: var(--ratio-single); }
+.media-background { aspect-ratio: var(--ratio-cover); }
+html[data-ratio-single="3 / 2"] { --ratio-single: 3 / 2; }
+html[data-ratio-single="4 / 3"] { --ratio-single: 4 / 3; }
+html[data-ratio-single="2 / 1"] { --ratio-single: 2 / 1; }
+html[data-ratio-cover="16 / 9"] { --ratio-cover: 16 / 9; }
+html[data-ratio-cover="2 / 1"] { --ratio-cover: 2 / 1; }
 .media-double { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .media-double .slot { aspect-ratio: 4 / 5; }
 .media-triple { display: grid; grid-template-columns: 1.62fr 1fr; gap: 8px; }
@@ -444,7 +467,8 @@ a:hover > .slot::after,
 }
 .foot-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  /* 页脚只有两栏：站点信息 + 浏览入口（分类导航交给 INDEX 抽屉，避免重复一份） */
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: clamp(24px, 5vw, 64px);
 }
 .foot-brand { font-family: var(--font-serif); font-size: 22px; }
@@ -518,29 +542,40 @@ a:hover > .slot::after,
   color: var(--color-text-muted);
 }
 
-.index-list { display: grid; }
-.index-item {
+/* 目录条目直接来自 rice.navigation 插件的 header.navigation 插槽，
+   因此这里只给 `.rn-nav-link` 定版式：编号由 CSS 计数器生成，
+   后台增删导航项时编号自动跟着走（01、02…），模板不需要改。 */
+.index-list {
+  display: grid;
+  counter-reset: index-entry;
+}
+.index-list .rn-nav-link {
   display: grid;
   grid-template-columns: 46px 1fr auto;
   align-items: baseline;
   gap: var(--space-4);
   padding: 18px 8px;
   border-bottom: 1px solid var(--color-divider);
+  counter-increment: index-entry;
+  font-size: var(--fs-body);
   transition: background var(--duration-fast) var(--ease-editorial);
 }
-.index-item:first-child { border-top: 1px solid var(--color-divider); }
-.index-item:hover { background: var(--color-surface-soft); }
-.index-item .no {
+.index-list .rn-nav-link:first-child { border-top: 1px solid var(--color-divider); }
+.index-list .rn-nav-link::before {
+  content: counter(index-entry, decimal-leading-zero);
   font-family: var(--font-mono); font-size: var(--fs-micro);
   letter-spacing: .1em; color: var(--color-text-muted);
 }
-.index-item .nm { display: grid; gap: 2px; }
-.index-item .nm strong { font-size: var(--fs-body); font-weight: 600; }
-.index-item .nm span { font-size: var(--fs-meta); color: var(--color-text-muted); }
-.index-item .go { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--color-text-muted); }
-.index-item:hover .go { color: var(--color-accent); }
-.index-item[aria-current="page"] { background: var(--color-surface-soft); }
-.index-item[aria-current="page"] .nm strong { color: var(--color-accent); }
+.index-list .rn-nav-link::after {
+  content: "↗";
+  font-family: var(--font-mono); font-size: var(--fs-micro);
+  color: var(--color-text-muted);
+}
+.index-list .rn-nav-link:hover { background: var(--color-surface-soft); }
+.index-list .rn-nav-link[aria-current="page"],
+.index-list .rn-nav-link--active { background: var(--color-surface-soft); color: var(--color-accent); }
+.index-list .rn-nav-link[aria-current="page"]::before,
+.index-list .rn-nav-link--active::before { color: var(--color-accent); }
 
 /* ── 11. 文章页 Compact Header ─────────────────────────────────────────── */
 .reader-head {
@@ -705,7 +740,8 @@ a:hover > .slot::after,
 
 /* ── 13. 文章页底部 ───────────────────────────────────────────────────── */
 .article-tags {
-  margin-top: clamp(40px, 5vw, 64px);
+  /* 分割线之上的留白要明显大于线下的内容间距，否则线会「贴」在正文上 */
+  margin-top: clamp(64px, 8vw, 96px);
   padding-top: var(--space-6);
   border-top: 1px solid var(--color-divider);
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
@@ -720,7 +756,7 @@ a:hover > .slot::after,
 .tag:hover { color: var(--color-text); border-color: var(--color-text-muted); }
 
 .article-nav {
-  margin-top: var(--space-8);
+  margin-top: clamp(48px, 6vw, 72px);
   display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6);
 }
 .article-nav a {
@@ -945,7 +981,6 @@ a:hover > .slot::after,
   .media-triple .slot-main { aspect-ratio: 16 / 10; }
   .media-triple .col { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
   .media-triple .col .slot { aspect-ratio: 4 / 3; }
-  .media-hero { aspect-ratio: 16 / 9; }
 }
 @media (max-width: 600px) {
   .masthead-bar { flex-direction: column; align-items: flex-start; gap: var(--space-4); }
@@ -966,15 +1001,26 @@ a:hover > .slot::after,
 
 /* ── 18. 页面过渡（Swup 4） ─────────────────────────────────────────────
    只在 Swup 真正接管后才生效（rw-swup 由脚本加到 <html> 上），
-   因此脚本加载失败时页面不会被卡在透明度 0。 */
+   因此脚本加载失败时页面不会被卡在透明度 0。
+
+   ⚠️ 出站/入站选择器必须区分开：swup 在**淡出阶段**就同时挂上
+   is-changing + is-animating（还有 is-leaving），直到内容替换时才加 is-rendering。
+   所以 is-animating 绝不能出现在「恢复 opacity: 1」的规则里 ——
+   同优先级下后写的规则会覆盖淡出，整个动画被吃掉（实测 opacity 全程恒为 1）。 */
 .transition-main { opacity: 1; transform: translateY(0); }
 .rw-swup .transition-main {
-  transition: opacity var(--duration-page) var(--ease-editorial),
-              transform var(--duration-page) var(--ease-editorial);
+  transition: opacity var(--duration-exit) var(--ease-editorial),
+              transform var(--duration-exit) var(--ease-editorial);
 }
+/* 淡出：is-changing 期间（此时还没有 is-rendering） */
 .rw-swup.is-changing .transition-main { opacity: 0; transform: translateY(6px); }
-.rw-swup.is-rendering .transition-main,
-.rw-swup.is-animating .transition-main { opacity: 1; transform: translateY(0); }
+/* 淡入：内容已替换，用稍长的时长 */
+.rw-swup.is-rendering .transition-main {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--duration-enter) var(--ease-editorial),
+              transform var(--duration-enter) var(--ease-editorial);
+}
 @media (prefers-reduced-motion: reduce) {
   .rw-swup .transition-main { transition: none; }
 }
@@ -1058,34 +1104,157 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
 .foot-widgets { padding-block: var(--space-8) var(--space-6); border-bottom: 1px solid var(--color-divider); }
 .masthead-actions { display: flex; align-items: center; gap: var(--space-4); flex: none; }
 .masthead-nav, .reader-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
-.drawer-nav {
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-divider);
-  display: grid; gap: 10px;
-}
 .masthead-nav .rn-nav-link,
-.reader-nav .rn-nav-link,
-.drawer-nav .rn-nav-link {
+.reader-nav .rn-nav-link {
   font-size: var(--fs-small);
   color: var(--color-text-muted);
   transition: color var(--duration-fast) linear;
 }
 .masthead-nav .rn-nav-link:hover,
-.reader-nav .rn-nav-link:hover,
-.drawer-nav .rn-nav-link:hover { color: var(--color-accent); }
+.reader-nav .rn-nav-link:hover { color: var(--color-accent); }
 .masthead-nav a[aria-current="page"],
 .reader-nav a[aria-current="page"],
-.drawer-nav a[aria-current="page"],
 .masthead-nav .rn-nav-link--active,
-.reader-nav .rn-nav-link--active,
-.drawer-nav .rn-nav-link--active { color: var(--color-accent); }
+.reader-nav .rn-nav-link--active { color: var(--color-accent); }
+/* 只有图标的按钮（阅读设置）：保持 44×44 触控尺寸，不撑宽顶栏 */
+.btn-icon { padding-inline: 0; width: 44px; justify-content: center; }
+.btn-icon svg { width: 19px; height: 19px; }
 @media (max-width: 920px) {
-  /* 移动端收起页头导航：INDEX 抽屉里同样留了导航插槽 */
+  /* 移动端收起页头导航：INDEX 抽屉里用的是同一份导航插槽 */
   .reader-nav { display: none; }
 }
+@media (max-width: 600px) {
+  /* 窄屏顶栏只保留 INDEX 的图标，避免与目录/设置挤在一起 */
+  .reader-tools .index-trigger > span:first-child { display: none; }
+  .reader-tools .index-trigger { padding-inline: 6px; }
+  /* 顶栏按钮一律不参与压缩：文字隐去后仍要保持 44×44 的触控尺寸 */
+  .reader-tools > * { flex: none; }
+  .reader-tools .btn-quiet { width: 44px; padding-inline: 0; justify-content: center; }
+}
 
-/* ── 22. 短代码（主题自定义标记，见 assets/js/shortcodes.js） ─────────── */
+/* ── 22. 评论区（标记由 rice.comments 插件的 post.comments 插槽提供） ──
+   类名清单来自 plugins/official/comments/src/slot.ts：
+   .rn-comments__body/meta/list/pager/form、.rn-comment(.has-avatar)__meta/__author/__time/__body/__actions,
+   .rn-field、.rn-pager__link。主题只负责样式，不改标记。 */
+.rn-comments__body { display: grid; gap: var(--space-6); }
+.rn-comments__meta {
+  font-family: var(--font-mono); font-size: var(--fs-micro);
+  letter-spacing: .1em; color: var(--color-text-muted);
+}
+.rn-comments__empty { color: var(--color-text-muted); }
+.rn-comments__message {
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  font-size: var(--fs-small);
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface-soft);
+}
+.rn-comments__message.is-ok { border-color: var(--color-accent-soft); color: var(--color-text); }
+.rn-comments__message.is-error { border-color: var(--color-text); color: var(--color-text); }
+
+.rn-comments__list,
+.rn-comments__children { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-6); }
+.rn-comments__children {
+  margin-top: var(--space-4);
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--color-divider);
+}
+
+.rn-comment { position: relative; margin: 0; }
+/* 有头像时才让出左侧空间（没有头像时不留下空档） */
+.rn-comment.has-avatar { padding-left: 60px; }
+.rn-comment__avatar {
+  position: absolute; left: 0; top: 2px;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--color-surface-soft);
+}
+.rn-comment__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.rn-comment__author { font-size: var(--fs-small); font-weight: 600; }
+.rn-comment__time {
+  font-family: var(--font-mono); font-size: var(--fs-micro);
+  letter-spacing: .08em; color: var(--color-text-muted);
+}
+.rn-comment__body { margin-top: 6px; font-size: var(--fs-small); line-height: 1.8; }
+.rn-comment__body > * + * { margin-top: .9em; }
+.rn-comment__body a { color: var(--color-accent); text-decoration: underline; text-underline-offset: .2em; }
+.rn-comment__actions { margin-top: 8px; display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.rn-comment__reply {
+  font-family: var(--font-mono); font-size: var(--fs-micro);
+  letter-spacing: .08em; color: var(--color-text-muted);
+  transition: color var(--duration-fast) linear;
+}
+.rn-comment__reply:hover { color: var(--color-accent); }
+
+.rn-comments__pager { display: flex; flex-wrap: wrap; gap: 6px; }
+.rn-pager__link {
+  min-width: 34px; min-height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 4px 10px;
+  border: 1px solid var(--color-divider); border-radius: 6px;
+  font-family: var(--font-mono); font-size: var(--fs-meta);
+  color: var(--color-text-muted);
+  transition: color var(--duration-fast) linear, border-color var(--duration-fast) linear;
+}
+.rn-pager__link:hover { color: var(--color-text); border-color: var(--color-text-muted); }
+.rn-pager__link.is-active { color: var(--color-accent); border-color: var(--color-accent); }
+
+/* 表单 */
+.rn-comments__form {
+  display: grid; gap: var(--space-4);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-divider);
+}
+.rn-comments__form-title { font-size: var(--fs-h3); }
+.rn-comments__replying {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4);
+  font-size: var(--fs-small); color: var(--color-text-muted);
+}
+.rn-comments__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.rn-field { display: grid; gap: 6px; }
+.rn-field__label { font-size: var(--fs-meta); color: var(--color-text-muted); }
+.rn-field__input {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-control);
+  font-size: var(--fs-small);
+  line-height: 1.6;
+}
+.rn-field__input:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; border-color: var(--color-accent); }
+.rn-field__textarea { min-height: 120px; resize: vertical; }
+/* 蜜罐字段：视觉隐藏但可提交，键盘也不会落到它上面 */
+.rn-field--honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px; height: 1px;
+  overflow: hidden;
+}
+.rn-comments__form-footer {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: var(--space-4);
+}
+.rn-comments__hint { font-size: var(--fs-meta); color: var(--color-text-muted); }
+.rn-comments__submit {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 10px 22px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-control);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: var(--fs-small);
+  transition: background var(--duration-fast) var(--ease-editorial);
+}
+.rn-comments__submit:hover { background: color-mix(in oklab, var(--color-accent) 86%, var(--color-text)); }
+@media (max-width: 768px) {
+  .rn-comments__fields { grid-template-columns: minmax(0, 1fr); }
+  .rn-comment.has-avatar { padding-left: 52px; }
+  .rn-comment__avatar { width: 38px; height: 38px; }
+}
+
+/* ── 23. 短代码（主题自定义标记，见 assets/js/shortcodes.js） ─────────── */
 .rw-note {
   border-left: 2px solid var(--color-accent-soft);
   background: var(--color-surface-soft);

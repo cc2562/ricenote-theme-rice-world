@@ -9,7 +9,6 @@
 {% import "partials/image.njk" as image with context %}
 {% import "partials/entry-parts.njk" as parts with context %}
 {% set f = entry.fields or {} %}
-{% set LABEL = { text: '纯文字', single: '单图', hero: '通栏大图', background: '背景封面', double: '双图', triple: '三图', quad: '四图' } %}
 
 {# 按 1→4 顺序收集有效图片与各自焦点，缺图不占位 #}
 {% set items = [] %}
@@ -39,7 +38,7 @@
 {% if layout == 'text' %}
   <article class="entry entry--text" data-entry>
     <div class="entry-text">
-      <div class="entry-head">{{ parts.meta(entry, LABEL[layout]) }}</div>
+      <div class="entry-head">{{ parts.meta(entry) }}</div>
       {{ parts.heading(entry) }}
       {{ parts.foot(entry) }}
     </div>
@@ -51,7 +50,7 @@
       {{ image.slot(items[0].src, '', 'media-background', items[0].focus, budget >= 1) }}
       <span class="scrim" aria-hidden="true"></span>
       <div class="cap">
-        {{ parts.meta(entry, LABEL[layout]) }}
+        {{ parts.meta(entry) }}
         {{ parts.heading(entry) }}
       </div>
     </div>
@@ -90,7 +89,7 @@
         </a>
       </div>
       <div class="entry-text">
-        {{ parts.meta(entry, LABEL[layout]) }}
+        {{ parts.meta(entry) }}
         {{ parts.heading(entry) }}
         {{ parts.foot(entry) }}
       </div>

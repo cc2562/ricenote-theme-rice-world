@@ -1,28 +1,9 @@
 {#
-  页脚：站点信息、浏览入口、主题入口、订阅与回到顶部。
+  页脚：站点信息、浏览入口、订阅与回到顶部。
 
-  「主题」一列取自当前页能看到的分类/标签并去重：
-  列表页用 posts.items，文章页用 post.terms，分类页用 term。
-  后端没有全局分类接口，因此这里只列举当前上下文里的主题；
-  一篇文章都没有时该列整体不渲染，避免留下一个空标题。
+  刻意不放「主题/分类」列：分类导航交给 rice.navigation 插件（INDEX 抽屉与页头），
+  页脚保持简洁，只留全站恒定的入口，避免同一信息在两个位置各写一份。
 #}
-{% set topics = [] %}
-{% set seenSlugs = '|' %}
-{% if posts and posts.items %}
-  {% for item in posts.items %}
-    {% for itemTerm in (item.terms if item.terms else []) %}
-      {% if seenSlugs.indexOf('|' + itemTerm.slug + '|') === -1 %}
-        {% set seenSlugs = seenSlugs + itemTerm.slug + '|' %}
-        {% set topics = topics.concat([itemTerm]) %}
-      {% endif %}
-    {% endfor %}
-  {% endfor %}
-{% elif post and post.terms %}
-  {% set topics = post.terms %}
-{% elif term %}
-  {% set topics = [term] %}
-{% endif %}
-
 <footer class="site-foot" id="site-foot">
   {# 单列编辑式版面没有侧栏：sidebar.widgets 落在页脚上方，避免插件功能被静默丢弃。
      slot() 返回 SafeString（恒为真值），必须用 .length 判断是否真的为空。 #}
@@ -54,15 +35,6 @@
           <a href="{{ theme.settings.feedPath }}" data-no-swup>RSS 订阅</a>
         {% endif %}
       </nav>
-
-      {% if topics.length %}
-        <nav class="foot-col" aria-label="主题">
-          <span class="label">主题</span>
-          {% for itemTerm in topics %}
-            <a href="{{ itemTerm.url or (url('term.category', { slug: itemTerm.slug }) if itemTerm.type == 'category' else url('term.tag', { slug: itemTerm.slug })) }}">{{ itemTerm.name }}</a>
-          {% endfor %}
-        </nav>
-      {% endif %}
     </div>
 
     {% if theme.settings.socialLinks and theme.settings.socialLinks.length %}

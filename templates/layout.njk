@@ -23,7 +23,13 @@
       data-lazy="{{ 'on' if theme.settings.enableLazyLoad != false else 'off' }}"
       data-ph-fit="{{ theme.settings.lazyPlaceholderFit or 'cover' }}"
       data-fade="{{ 'on' if theme.settings.lazyFadeIn != false else 'off' }}"
-      data-eager="{{ theme.settings.eagerCount | number(2) }}">
+      data-eager="{{ theme.settings.eagerCount | number(2) }}"
+      {#- 版式比例用 data 属性传递，CSS 侧按已知取值白名单匹配：
+          select 的值是后台可写的，直接拼进 <style> 等于开放样式注入。 -#}
+      data-ratio-single="{{ theme.settings.homeSingleRatio or '16 / 9' }}"
+      data-ratio-cover="{{ theme.settings.homeCoverRatio or '20 / 9' }}"
+      data-avatar="{{ 'on' if theme.settings.commentAvatar != false else 'off' }}"
+      data-avatar-base="{{ theme.settings.commentAvatarBase or 'https://weavatar.com/avatar/' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">

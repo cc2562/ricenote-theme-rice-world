@@ -3,7 +3,7 @@
   "id": "rice.world",
   "name": "Rice World",
   "description": "Rice World：无边框编辑式个人刊物主题。首页以「一篇文章 = 一个版面单元」呈现，支持 0–4 张图片的七种拼版；文章页为紧凑顶栏的沉浸阅读，含目录抽屉、阅读进度、字号与主题切换、图片懒加载与加载中占位图、友情链接页、短代码与 Swup 页面过渡。配色、版式、图片加载与页脚文案都可在后台「外观中心 → 主题设置」调整。",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "apiVersion": "^1.0.0",
   "engine": "nunjucks",
   "author": "Rice World",
@@ -315,6 +315,47 @@
           "type": "boolean",
           "label": { "zh-CN": "显示简介区", "en": "Show intro section" },
           "default": true
+        },
+        "homeSingleRatio": {
+          "type": "select",
+          "label": { "zh-CN": "单图版式高度", "en": "Single-image height" },
+          "description": { "zh-CN": "同时作用于「单图」与「通栏大图」，让首页只有一张图的版式保持同一高度", "en": "Applies to both the single and hero layouts so one-image entries share one height" },
+          "default": "16 / 9",
+          "options": [
+            { "value": "16 / 9", "label": { "zh-CN": "16 : 9（推荐）", "en": "16 : 9 (recommended)" } },
+            { "value": "3 / 2", "label": { "zh-CN": "3 : 2", "en": "3 : 2" } },
+            { "value": "4 / 3", "label": { "zh-CN": "4 : 3（更矮）", "en": "4 : 3 (shorter)" } },
+            { "value": "2 / 1", "label": { "zh-CN": "2 : 1（更扁）", "en": "2 : 1 (wider)" } }
+          ]
+        },
+        "homeCoverRatio": {
+          "type": "select",
+          "label": { "zh-CN": "背景封面高度", "en": "Background cover height" },
+          "description": { "zh-CN": "「背景封面」要叠字，因此单独给比例；想彻底统一可设为 16 : 9", "en": "The background layout overlays text, so it has its own ratio; pick 16 : 9 to make it match" },
+          "default": "20 / 9",
+          "options": [
+            { "value": "20 / 9", "label": { "zh-CN": "20 : 9（推荐）", "en": "20 : 9 (recommended)" } },
+            { "value": "16 / 9", "label": { "zh-CN": "16 : 9（与单图一致）", "en": "16 : 9 (same as single)" } },
+            { "value": "2 / 1", "label": { "zh-CN": "2 : 1", "en": "2 : 1" } }
+          ]
+        }
+      }
+    },
+    "comments": {
+      "label": { "zh-CN": "评论", "en": "Comments" },
+      "description": { "zh-CN": "评论区的排版与头像；评论数据由 rice.comments 插件提供", "en": "Comment layout and avatars; data comes from the rice.comments plugin" },
+      "fields": {
+        "commentAvatar": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示评论头像", "en": "Show comment avatars" },
+          "description": { "zh-CN": "按评论者邮箱生成头像，请求只携带邮箱的哈希，不发送原文", "en": "Avatars are requested with the email hash only, never the raw address" },
+          "default": true
+        },
+        "commentAvatarBase": {
+          "type": "url",
+          "label": { "zh-CN": "头像服务地址", "en": "Avatar service URL" },
+          "description": { "zh-CN": "默认走 weavatar 镜像站；地址末尾需要带斜杠", "en": "weavatar mirror by default; keep the trailing slash" },
+          "default": "https://weavatar.com/avatar/"
         }
       }
     },
