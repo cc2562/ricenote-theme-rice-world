@@ -865,9 +865,22 @@
     );
   }
 
+  /* ── 短代码：平台引擎只在 DOMContentLoaded / load 与注册之后扫描容器，
+     Swup 换页替换了正文却不会再扫一次 —— 每次 boot 主动补扫（引擎自身幂等）。 */
+  function rescanShortcodes() {
+    var engine = window.RiceNoteShortcodes;
+    if (!engine || typeof engine.scan !== 'function') { return; }
+    document.querySelectorAll('[data-rn-shortcodes]').forEach(function (node) {
+      try { engine.scan(node); }
+      catch (error) { /* 单个容器失败不该影响整页：引擎已保留原文并在控制台留了日志 */ }
+    });
+  }
+
   /* ── 启动（可重复调用：首次加载与 Swup 每次替换后都走这里） ─────────── */
   function boot() {
     ensureScrim();
+    /* 必须早于目录锚点的收集：引擎会重建容器内容，节点换新后先前抓到的标题引用会失效 */
+    rescanShortcodes();
     applyTheme(read(STORE.theme, defaultThemeMode()));
     applySize(read(STORE.size, defaultFontSize()));
 

@@ -45,7 +45,7 @@
 
       {{ slot('post.beforeContent', { postId: post.id }) }}
 
-      <article class="prose" data-prose>
+      <article class="prose" data-prose data-rn-shortcodes>
         {% if post.html %}
           {{ post.html }}
         {% else %}

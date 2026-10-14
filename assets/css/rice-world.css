@@ -1443,3 +1443,31 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
   border-radius: var(--radius-image);
   background: var(--ph-color);
 }
+/* 瀑布流相册（[photos] 短代码）：按列布局，每张图保留自身比例，自然形成高低错落。
+   用多列而不是网格：网格会把每行拉到同一高度（要么裁切、要么留空），就不是瀑布流了。 */
+.rw-photos {
+  column-count: 2;
+  column-gap: var(--space-2);
+}
+@media (min-width: 720px) { .rw-photos { column-count: 3; } }
+/* 选择器带 .rw-photos 前缀：正文里的 .prose figure 会加 margin-top，这里要压回 0 */
+.rw-photos .rw-photo {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  display: grid;
+  gap: 6px;
+  margin: 0 0 var(--space-2);
+}
+.rw-photos .rw-photo img {
+  width: 100%; height: auto; display: block;
+  border-radius: var(--radius-image);
+  background: var(--ph-color);
+}
+.rw-photos .rw-photo figcaption {
+  font-size: var(--fs-meta);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+/* 地址失效：只留占位底色，不出坏图图标；图注仍在，作者才能定位是哪一张 */
+.rw-photos .rw-photo.is-failed { border-radius: var(--radius-image); }
+.rw-photos .rw-photo.is-failed img { visibility: hidden; min-height: 120px; }

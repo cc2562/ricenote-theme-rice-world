@@ -9,6 +9,7 @@
      [note title="注意" tone="alert"]…[/note]  同上，用文字色强调
      [figure src="/media/12" alt="说明" wide]…[/figure]  带图注的图片
      [gallery]…[/gallery]                   多图并置（内含 <img>）
+     [photos]描述,地址###描述,地址[/photos]   瀑布流相册（见文件末尾的说明）
 
    引擎不支持嵌套，因此这些标记内部不要再放其它短代码。
    ========================================================================== */
@@ -78,6 +79,105 @@
       Array.prototype.forEach.call(wrap.querySelectorAll('img'), function (img) {
         img.loading = 'lazy';
         img.decoding = 'async';
+      });
+      return wrap;
+    }
+  });
+
+  /* ── [photos] 瀑布流相册 ────────────────────────────────────────────────
+     [photos] 描述,图片地址###描述,图片地址###… [/photos]
+
+     · `###` 分隔每张照片；每张里逗号前是描述、逗号后是地址（描述可以省略，只写地址也行）；
+     · 从「块」入手解析：引擎交给主题的是服务端 Markdown 渲染后的 HTML，行首的 `###` 会被
+       Markdown 当成三级标题（变成 <h3>），所以「每个块内部再按 ### 切分」才能同时兼容
+       「一行写完」与「每张一行」两种写法；
+     · 一个地址都认不出来时返回 null —— 标记原样保留，作者立刻能看出写法没生效，
+       而不是得到一个静默的空相册。 */
+
+  /** 相册里认得出的地址：http(s) 绝对地址、/media 与 /uploads 受管路径、./ 相对路径 */
+  function photoUrl(value) {
+    var url = String(value == null ? '' : value).trim();
+    if (/^https?:\/\/\S+$/i.test(url)) { return url; }
+    if (/^\/(?:media|uploads|assets|theme-assets)\/\S+$/i.test(url)) { return url; }
+    if (/^\.\/\S+$/.test(url)) { return url; }
+    return '';
+  }
+
+  /** 「描述,地址」→ { caption, src }；取不出地址就返回 null */
+  function photoItem(chunk) {
+    var text = String(chunk == null ? '' : chunk).replace(/\s+/g, ' ').trim();
+    if (!text) { return null; }
+
+    /* 先按逗号切：描述自身带逗号时（「海边的黄昏, 拍糊了」），
+       第一个「像地址的片段」才是地址，因此从右往左不影响结果 */
+    var pieces = text.split(/[,，]/);
+    var src = '';
+    var index = -1;
+    for (var i = 0; i < pieces.length; i += 1) {
+      src = photoUrl(pieces[i]);
+      if (src) { index = i; break; }
+    }
+    var caption = '';
+    if (index !== -1) {
+      caption = pieces.slice(0, index).join(',').trim();
+    } else {
+      /* 兼容「描述 地址」这种用空格分隔的写法 */
+      var words = text.split(' ');
+      for (var j = 0; j < words.length; j += 1) {
+        src = photoUrl(words[j]);
+        if (src) { index = j; break; }
+      }
+      if (index === -1) { return null; }
+      caption = words.slice(0, index).join(' ').trim();
+    }
+    src = safeUrl(src);
+    if (!src) { return null; }
+    return { caption: caption, src: src };
+  }
+
+  runtime.define({
+    name: 'photos',
+    render: function (context) {
+      var template = document.createElement('template');
+      template.innerHTML = context.bodyHtml || '';
+      /* 没有块级元素（纯文字）时整体当一块处理 */
+      var blocks = Array.prototype.slice.call(template.content.children);
+      if (!blocks.length) { blocks = [template.content]; }
+
+      var items = [];
+      blocks.forEach(function (block) {
+        String(block.textContent || '').split('###').forEach(function (chunk) {
+          var item = photoItem(chunk);
+          if (item) { items.push(item); }
+        });
+      });
+      if (!items.length) { return null; }
+
+      var wrap = element('div', 'rw-photos');
+      items.forEach(function (item) {
+        var figure = element('figure', 'rw-photo');
+        var img = element('img');
+        /* 先挂 onerror 再设 src：地址命中的是缓存里的 404 时，错误可能在同一任务内就派发，
+           晚挂一步就会漏掉这次失败，表现为失效图片照样显示坏图图标 */
+        img.onerror = function () { figure.classList.add('is-failed'); };
+        img.src = item.src;
+        img.alt = item.caption || '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        /* 与主题灯箱同一套契约：点击与回车都由 rice-world.js 的事件委托接管，
+           所以这些动态插入的图片同样能打开查看器 */
+        img.setAttribute('data-zoomable', '');
+        img.setAttribute('data-zoom-src', item.src);
+        img.setAttribute('data-caption', item.caption || '');
+        img.setAttribute('tabindex', '0');
+        img.setAttribute('role', 'button');
+        img.setAttribute('aria-label', (item.caption || '照片') + '，点击放大');
+        /* 标记已就绪：rice-world.js 的 initProseImages 只增强没有这个属性的图片，避免重复处理 */
+        img.setAttribute('data-rw-ready', '');
+        img.className = 'content-img';
+        figure.appendChild(img);
+        if (item.caption) { figure.appendChild(element('figcaption', null, item.caption)); }
+        wrap.appendChild(figure);
       });
       return wrap;
     }
