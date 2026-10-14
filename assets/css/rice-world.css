@@ -185,6 +185,33 @@ hr { border: 0; border-top: 1px solid var(--color-divider); margin: 0; }
 }
 .prose a:hover { text-decoration-color: var(--color-accent); }
 
+/* 链接悬停时加粗一点。用描边而不是 font-weight：改字重会让字变宽、整段文字跟着重新折行，
+   读起来会跳。浏览器不支持描边时退回极细的文字阴影，观感接近。 */
+.prose a:hover,
+.prose a:focus-visible,
+.entry-title a:hover,
+.entry-title a:focus-visible,
+.article-nav a:hover .nm,
+.article-nav a:focus-visible .nm,
+.link-card:hover .link-name,
+a.rn-comment__author:hover,
+.site-foot a:hover {
+  -webkit-text-stroke: .5px currentColor;
+}
+@supports not (-webkit-text-stroke: 1px currentColor) {
+  .prose a:hover,
+  .prose a:focus-visible,
+  .entry-title a:hover,
+  .entry-title a:focus-visible,
+  .article-nav a:hover .nm,
+  .article-nav a:focus-visible .nm,
+  .link-card:hover .link-name,
+  a.rn-comment__author:hover,
+  .site-foot a:hover {
+  text-shadow: 0 0 .5px currentColor;
+  }
+  }
+
 /* ── 5. 按钮（控件） ───────────────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
