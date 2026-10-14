@@ -1,0 +1,41 @@
+{#
+  友情链接页（kind = links，由 rice.friend-links 插件提供）。
+  顶层变量 friendLinks 的元素形状：{ name, url, avatarUrl, description }，后两项可能为空串。
+
+  本页刻意不渲染域名文本，只渲染头像、名称与介绍；整卡可点击跳转。
+  插件未启用时不会有这个页面（也不会注册 links 路由），因此这里不需要 has_feature 判断。
+#}
+{% extends "layout.njk" %}
+
+{% block title %}友情链接 · {{ site.title }}{% endblock %}
+{% block description %}{{ theme.settings.linksIntro or site.description }}{% endblock %}
+
+{% block content %}
+  {% include "partials/header-compact.njk" %}
+  <main id="main">
+    <div class="shell">
+      <div class="page-head">
+        <p class="label">Links · 友情链接</p>
+        <h1 class="page-title">友情链接</h1>
+        {% if theme.settings.linksIntro %}<p class="page-lead">{{ theme.settings.linksIntro }}</p>{% endif %}
+      </div>
+
+      {% if friendLinks and friendLinks.length %}
+        <p class="label links-count">共 {{ friendLinks.length }} 个站点</p>
+        <ul class="link-grid" data-columns="{{ theme.settings.linkColumns | number(3) }}">
+          {% for item in friendLinks %}
+            {% set link = item %}
+            {% include "partials/friend-link-card.njk" %}
+          {% endfor %}
+        </ul>
+      {% else %}
+        <section class="empty-state">
+          <p class="label">暂无友情链接</p>
+          <p>在后台「外观 → 友情链接」里添加第一个站点。</p>
+        </section>
+      {% endif %}
+
+      {% if theme.settings.linksNote %}<p class="links-note">{{ theme.settings.linksNote }}</p>{% endif %}
+    </div>
+  </main>
+{% endblock %}

@@ -1,0 +1,15 @@
+{# 文章目录抽屉：章节由脚本从正文 h2/h3 自动生成；与 INDEX 语义独立 #}
+{% if theme.settings.showToc %}
+  <aside class="drawer" data-drawer="toc" id="toc-drawer" role="dialog" aria-modal="true" aria-labelledby="toc-drawer-title" inert>
+    <div class="drawer-head">
+      <span class="label" id="toc-drawer-title">文章目录</span>
+      <button class="icon-btn" type="button" data-drawer-close aria-label="关闭文章目录">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <nav class="toc-list" data-toc-list aria-label="文章目录"></nav>
+    </div>
+    <div class="drawer-foot">章节根据正文的二、三级标题自动生成</div>
+  </aside>
+{% endif %}

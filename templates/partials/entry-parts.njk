@@ -1,0 +1,35 @@
+{#
+  文章单元的复用片段（宏）。宏的返回值不会被自动转义，因此适合输出标记。
+  元数据与标题的排版在所有版式之间保持一致——这是设计规范的要求。
+#}
+{% import "partials/date-macros.njk" as dates with context %}
+
+{% macro meta(entry, layoutLabel) %}
+  <div class="entry-meta">
+    {% if entry.terms and entry.terms.length %}
+      <span class="cat">{{ entry.terms[0].name }}</span>
+      <span class="sep" aria-hidden="true"></span>
+    {% endif %}
+    {% if entry.publishedAt %}
+      <time datetime="{{ dates.iso(entry.publishedAt) }}">{{ dates.editorial(entry.publishedAt) }}</time>
+      <span class="sep" aria-hidden="true"></span>
+    {% endif %}
+    <span>{{ layoutLabel }}</span>
+  </div>
+{% endmacro %}
+
+{% macro heading(entry) %}
+  <h2 class="entry-title"><a href="{{ entry.url }}">{{ entry.title }}</a></h2>
+  {% if entry.excerpt %}
+    <p class="entry-excerpt">{{ entry.excerpt | excerpt(120) }}</p>
+  {% endif %}
+{% endmacro %}
+
+{% macro foot(entry) %}
+  <div class="entry-foot">
+    {% if entry.publishedAt %}<span>{{ entry.publishedAt | date('YYYY·MM') }}</span>{% endif %}
+    {% if entry.terms and entry.terms.length %}
+      <span>{% for term in entry.terms %}#{{ term.name }}{% if not loop.last %} {% endif %}{% endfor %}</span>
+    {% endif %}
+  </div>
+{% endmacro %}

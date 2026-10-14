@@ -1,0 +1,20 @@
+{# 落地页（无标题）：正文自带标题时使用，因此不输出标题区 #}
+{% extends "layout.njk" %}
+
+{% block title %}{{ page.title }} · {{ site.title }}{% endblock %}
+{% block description %}{{ seoDescription or site.description }}{% endblock %}
+
+{% block content %}
+  {% include "partials/header-compact.njk" %}
+  <main id="main">
+    <div class="shell">
+      <article class="prose prose-plain" data-prose>
+        {% if content and content.html %}
+          {{ content.html }}
+        {% else %}
+          <p class="muted">该页面暂无正文。</p>
+        {% endif %}
+      </article>
+    </div>
+  </main>
+{% endblock %}

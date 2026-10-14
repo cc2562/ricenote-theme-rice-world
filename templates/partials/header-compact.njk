@@ -1,0 +1,51 @@
+{#
+  紧凑 Header：文章页与所有次级页面共用。
+
+  - 左侧返回入口指向首页（明确路径，直达页面时同样合理）；
+  - 文章页右侧是目录 / 阅读设置 / 复制链接（按主题设置显隐）；
+  - 其他页面右侧只有 INDEX；INDEX 在两类页面都保留，因为它是站点的主要导航入口；
+  - 底边进度线只在文章页出现，进度只统计正文区域。
+#}
+{% set isPost = page.kind == 'post' %}
+<header class="reader-head" id="reader-head">
+  <div class="shell">
+    <div class="reader-bar">
+      <a class="reader-brand" href="{{ url('home') }}">
+        <span class="back" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </span>
+        <span>{{ site.title }}.</span>
+      </a>
+      <div class="reader-nav">{{ slot('header.navigation') }}</div>
+      <div class="reader-tools">
+        {% if isPost and theme.settings.showToc %}
+          <button class="btn btn-quiet" type="button" data-drawer-open="toc" aria-expanded="false" aria-controls="toc-drawer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h9"/></svg>
+            <span class="tool-text">目录</span>
+          </button>
+        {% endif %}
+        {% if isPost and theme.settings.showReadingTools %}
+          <button class="btn btn-quiet" type="button" data-drawer-open="tools" aria-expanded="false" aria-controls="tools-drawer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M5 7h14M5 12h9M5 17h5"/><circle cx="17" cy="12" r="2.2"/><circle cx="12" cy="17" r="2.2"/></svg>
+            <span class="tool-text">阅读设置</span>
+          </button>
+        {% endif %}
+        {% if isPost %}
+          <button class="btn btn-quiet" type="button" data-copy-link>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M10 14a4 4 0 0 0 5.7 0l3-3A4 4 0 0 0 13 5.3l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1"/></svg>
+            <span class="tool-text">复制链接</span>
+          </button>
+        {% endif %}
+        <button class="btn btn-quiet index-in-compact" type="button" data-drawer-open="index" aria-expanded="false" aria-controls="index-drawer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+          <span class="tool-text">Index</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  {% if isPost and theme.settings.showProgress %}
+    <div class="progress-track" role="progressbar" aria-label="文章阅读进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span class="bar" data-progress></span>
+    </div>
+  {% endif %}
+</header>

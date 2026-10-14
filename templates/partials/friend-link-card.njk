@@ -1,0 +1,26 @@
+{#
+  友链卡片：调用方先 {% set link = ... %} 再 include。
+
+  设计约定：页面上只呈现「头像 + 名称 + 介绍」，域名只作为链接目标存在，
+  不渲染成文本（避免 URL 噪声，也不需要做域名截断）。
+  头像与介绍都可能为空串，缺头像时用名称首字 + 柔面底色降级。
+#}
+<li class="link-item">
+  <a class="link-card" href="{{ link.url }}"
+     {%- if theme.settings.linkOpenNewTab %} target="_blank" rel="noopener noreferrer nofollow"{% endif %}>
+    {% if theme.settings.showAvatars %}
+      {% if link.avatarUrl %}
+        <img class="link-avatar" src="{{ link.avatarUrl }}" alt="" width="56" height="56" loading="lazy" decoding="async"
+             onerror="this.classList.add('is-failed')">
+      {% else %}
+        <span class="link-avatar is-letter" aria-hidden="true">{{ (link.name or '') | truncate(1, true, '') }}</span>
+      {% endif %}
+    {% endif %}
+    <span class="link-body">
+      <span class="link-name">{{ link.name }}</span>
+      {% if theme.settings.showDescriptions and link.description %}
+        <span class="link-desc">{{ link.description }}</span>
+      {% endif %}
+    </span>
+  </a>
+</li>

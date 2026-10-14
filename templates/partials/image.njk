@@ -1,0 +1,55 @@
+{#
+  图片输出宏：所有内容图片（首页展示图、文章主图）的唯一出口。
+
+  ⚠️ 平台契约（packages/theme-sdk/src/validator.ts 的 case 'image'）：
+  image 型设置与内容字段的合法取值只有三种 ——
+    · null         —— 空值会被规范化成 **null**（不是空字符串），且已发布设置会覆盖 manifest 的 default；
+    · 正整数        —— 媒体库 Media ID（媒体插件公开地址是 GET /media/:id）；
+    · 字符串        —— 以 /uploads 或 /media 开头的受管相对路径。
+  因此本文件里**禁止**出现 `| string`、`| trim` 这类过滤器：
+  nunjucks 3.2.4 的 `string` 过滤器实现是 `copySafeness(obj, obj)`，而
+  `copySafeness` 内部执行 `target.toString()` —— 对 null 会抛
+  `TypeError: Cannot read properties of null (reading 'toString')`，整页渲染失败。
+  数字判定一律只用 `>` 比较（JS 语义下字符串与数字比较得到 false，不会抛错）。
+
+  另一个必须避开的坑：nunjucks 宏的返回值是 SafeString（恒为真值，且输出不再转义）。
+  所以这里**不把取值拆成子宏**、也不对宏返回值做真值判断，而是把 `<img>` 直接写在 slot() 里，
+  让 src 走正常的 `{{ }}` 输出路径从而保留自动转义。
+
+  职责：
+  - 固定比例容器（比例由调用方通过 cls 传入，如 media-single / media-hero），避免布局跳动；
+  - 懒加载：首屏图片 eager + fetchpriority=high，其余 lazy + decoding=async；
+    后台关闭懒加载时全部改为 eager；
+  - 加载中占位图：后台配置的「加载中占位图」与占位底色（--ph-color）双层；
+    占位层是纯装饰（aria-hidden + 空 alt + 不接收指针事件）；留空时只显示底色，属预期行为；
+  - 加载失败：onerror 给容器加 is-failed，CSS 隐藏两张图只留占位底色，不出现坏图图标。
+#}
+{% macro slot(src, alt, cls, focus, eager, zoomCaption) %}
+  {%- set lazyOn = theme.settings.enableLazyLoad != false -%}
+  {%- set loadMode = 'eager' if (eager and lazyOn) or (not lazyOn) else 'lazy' -%}
+  {%- set highPriority = eager and lazyOn -%}
+  {%- set phRaw = theme.settings.lazyPlaceholder -%}
+  {%- set phFit = 'contain' if theme.settings.lazyPlaceholderFit == 'contain' else 'cover' -%}
+  <div class="slot{% if cls %} {{ cls }}{% endif %}">
+    {%- if phRaw %}
+      {%- set phUrl = ('/media/' ~ phRaw) if phRaw > 0 else phRaw -%}
+    <img class="slot-ph" src="{{ phUrl }}" alt="" aria-hidden="true" decoding="async"
+         style="object-fit: {{ phFit }}"
+         onerror="this.style.display='none'">
+    {%- endif %}
+    {%- if src %}
+      {%- set srcUrl = ('/media/' ~ src) if src > 0 else src -%}
+    <img class="slot-img"
+         src="{{ srcUrl }}"
+         alt="{{ alt or '' }}"
+         {%- if focus and focus != 'center' %} style="object-position: {{ focus }}"{% endif %}
+         loading="{{ loadMode }}"
+         decoding="async"
+         {%- if highPriority %} fetchpriority="high"{% endif %}
+         {%- if zoomCaption %} data-zoomable tabindex="0" role="button"
+         data-zoom-src="{{ srcUrl }}" data-caption="{{ zoomCaption }}"
+         aria-label="{{ zoomCaption }}，点击放大"{% endif %}
+         onerror="this.closest('.slot').classList.add('is-failed')">
+    {%- endif %}
+  </div>
+{% endmacro %}

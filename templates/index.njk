@@ -1,0 +1,31 @@
+{#
+  首页：Floating Index 刊头 + 简介 + Editorial Feed + 分页。
+  展示单位是「一篇文章」，每篇按 contentFields 声明的版式输出 0–4 张图。
+#}
+{% extends "layout.njk" %}
+
+{% block content %}
+  {% include "partials/header-home.njk" %}
+
+  <main id="main" class="feed">
+    {% if posts and posts.items.length %}
+      <div class="shell" data-feed>
+        {% for post in posts.items %}
+          {% set entry = post %}
+          {% set entryEager = loop.index0 == 0 %}
+          {% include "partials/editorial-entry.njk" %}
+        {% endfor %}
+      </div>
+      <div class="shell">
+        {% include "partials/pagination.njk" %}
+      </div>
+    {% else %}
+      <div class="shell">
+        <section class="empty-state">
+          <p class="label">还没有文章</p>
+          <p>登录管理后台撰写第一篇文章，或检查内容插件是否启用。</p>
+        </section>
+      </div>
+    {% endif %}
+  </main>
+{% endblock %}

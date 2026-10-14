@@ -1,0 +1,111 @@
+{#
+  全局壳。
+
+  1) Swup 的替换容器是 #swup：页头与主内容都在里面，随路由一起被替换
+     （规范 8.1：变化的 Header 也纳入替换区，避免 Header 状态与新页面不同步）。
+     页面的目录/阅读设置抽屉也放在容器内，页脚、INDEX 抽屉与灯箱留在容器外。
+  2) 9 个标准插槽全部留出：head.end / body.start / body.end / header.navigation /
+     sidebar.widgets / post.beforeContent / post.afterContent / post.comments / footer.widgets。
+  3) 主题设置注入只写「输入变量」（--set-*）；语义 token 与浅深两套配色仍在 CSS 中各自定义。
+     color 型必须经 css_color 过滤器，数值必须经 number 过滤器。
+  4) 本主题是单列编辑式版面，没有侧栏，因此 sidebar.widgets 落在页脚上方，
+     以免插件功能被静默丢弃（这是刻意的取舍，不是遗漏）。
+#}
+<!doctype html>
+<html lang="{{ site.language }}"
+      data-page="{{ current_kind }}"
+      {#- 布尔开关统一写成「仅显式 false 才关闭」：设置值可能为 null，
+         写成 `if x` 会让 null 静默走 else 分支（例如把全站动效关掉）。 -#}
+      data-font="{{ theme.settings.fontFamily or 'system' }}"
+      data-default-theme="{{ theme.settings.defaultThemeMode or 'system' }}"
+      data-default-size="{{ theme.settings.defaultFontSize or 'm' }}"
+      data-motion="{{ 'off' if theme.settings.enableMotion == false else 'on' }}"
+      data-lazy="{{ 'on' if theme.settings.enableLazyLoad != false else 'off' }}"
+      data-ph-fit="{{ theme.settings.lazyPlaceholderFit or 'cover' }}"
+      data-fade="{{ 'on' if theme.settings.lazyFadeIn != false else 'off' }}"
+      data-eager="{{ theme.settings.eagerCount | number(2) }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page.title }}{% if page.kind != 'home' %} · {{ site.title }}{% endif %}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ seoDescription or site.description }}{% endblock %}">
+  <link rel="canonical" href="{{ site_url(page.canonicalUrl) }}">
+  <meta property="og:type" content="{{ 'article' if page.kind == 'post' else 'website' }}">
+  <meta property="og:site_name" content="{{ site.title }}">
+  <meta property="og:title" content="{{ page.title }}">
+  <meta property="og:description" content="{{ seoDescription or site.description }}">
+  <meta property="og:url" content="{{ site_url(page.canonicalUrl) }}">
+  <meta name="twitter:card" content="summary_large_image">
+  {% if page.kind == 'post' and post and post.publishedAt %}
+    <meta property="article:published_time" content="{{ post.publishedAt }}">
+  {% endif %}
+  {% if post and post.coverUrl %}
+    <meta property="og:image" content="{{ site_url(post.coverUrl) }}">
+  {% endif %}
+  <meta name="theme-color" content="#FAF9F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1B191F" media="(prefers-color-scheme: dark)">
+  <meta name="generator" content="RiceNote">
+  <link rel="stylesheet" href="{{ theme_asset('css/rice-world.css') }}">
+  <style>
+    {%- set siteWidth = theme.settings.contentWidth | number(1160) -%}
+    :root {
+      --set-accent: {{ theme.settings.accentColor | css_color('#806B9B') }};
+      --set-accent-soft: {{ theme.settings.accentSoftColor | css_color('#A394BD') }};
+      --set-ph: {{ theme.settings.lazyPlaceholderColor | css_color('#F3F0F5') }};
+      {#- number 型字段若被存成 null，number 过滤器会得到 0（有限数、不抛错），
+          直接用会把站点压成 0px，因此这里补一个下限回退到默认宽度。 -#}
+      --set-site-width: {{ siteWidth if siteWidth >= 640 else 1160 }}px;
+    }
+  </style>
+  <script>
+    /* 主题、字号在首帧前置应用，避免颜色闪烁；
+       has-js 让「加载完成淡入」只在脚本可用时生效（无 JS 时图片直接可见）。 */
+    (function () {
+      try {
+        var d = document.documentElement;
+        d.classList.add('has-js');
+        var fallbackTheme = d.getAttribute('data-default-theme') || 'system';
+        var fallbackSize = d.getAttribute('data-default-size') || 'm';
+        var t = localStorage.getItem('riceworld.theme') || fallbackTheme;
+        d.setAttribute('data-theme', t === 'system'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : t);
+        var s = localStorage.getItem('riceworld.fontSize') || fallbackSize;
+        if (s === 's' || s === 'l') { d.setAttribute('data-size', s); }
+      } catch (e) { /* 隐私模式下静默降级 */ }
+    })();
+  </script>
+  {{ slot('head.end') }}
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  {{ slot('body.start') }}
+
+  {# Swup 替换区：页头 + 主内容 #}
+  <div id="swup" class="transition-main">
+    {% block content %}{% endblock %}
+    {# 页脚放在替换区内：它的「主题」一列依赖当前页的 posts，留在区外会变成陈旧内容 #}
+    {% include "partials/site-footer.njk" %}
+  </div>
+
+  {#
+    抽屉与灯箱必须留在 #swup 之外：
+    .transition-main 上有 transform（页面过渡的位移），而带 transform 的元素会成为
+    其内部 position:fixed 后代的包含块 —— 抽屉会因此改为相对 #swup 定位，
+    收起态 translateX(102%) 会把文档撑出横向滚动。
+    这三张抽屉在所有页面都存在（靠设置与按钮控制可达性），而不是每页重建。
+  #}
+  {% include "partials/index-drawer.njk" %}
+  {% include "partials/toc-panel.njk" %}
+  {% include "partials/reading-tools.njk" %}
+  {% include "partials/image-lightbox.njk" %}
+
+  {{ slot('body.end') }}
+
+  <script src="{{ theme_asset('vendor/swup/Swup.umd.js') }}" defer></script>
+  <script src="{{ theme_asset('vendor/swup/SwupHeadPlugin.umd.js') }}" defer></script>
+  {{ shortcode_runtime() }}
+  <script src="{{ theme_asset('js/shortcodes.js') }}" defer></script>
+  <script src="{{ theme_asset('js/rice-world.js') }}" defer></script>
+</body>
+</html>

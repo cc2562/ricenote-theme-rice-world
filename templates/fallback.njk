@@ -1,0 +1,21 @@
+{#
+  兜底模板：未知 kind 或模板缺失时使用，保证不白屏。
+  只依赖 page 元信息，不读取任何插件变量，因此任何环境下都能渲染。
+#}
+{% extends "layout.njk" %}
+
+{% block content %}
+  {% include "partials/header-compact.njk" %}
+  <main id="main">
+    <div class="shell">
+      <div class="page-head">
+        <p class="label">Fallback</p>
+        <h1 class="page-title">{{ page.title or site.title }}</h1>
+        <p class="page-lead">该页面类型没有对应的主题模板，已回退到通用版式。</p>
+        <div class="empty-actions">
+          <a class="btn btn-solid" href="{{ url('home') }}">回到首页</a>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}

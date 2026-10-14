@@ -1,0 +1,96 @@
+{#
+  页脚：站点信息、浏览入口、主题入口、订阅与回到顶部。
+
+  「主题」一列取自当前页能看到的分类/标签并去重：
+  列表页用 posts.items，文章页用 post.terms，分类页用 term。
+  后端没有全局分类接口，因此这里只列举当前上下文里的主题；
+  一篇文章都没有时该列整体不渲染，避免留下一个空标题。
+#}
+{% set topics = [] %}
+{% set seenSlugs = '|' %}
+{% if posts and posts.items %}
+  {% for item in posts.items %}
+    {% for itemTerm in (item.terms if item.terms else []) %}
+      {% if seenSlugs.indexOf('|' + itemTerm.slug + '|') === -1 %}
+        {% set seenSlugs = seenSlugs + itemTerm.slug + '|' %}
+        {% set topics = topics.concat([itemTerm]) %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% elif post and post.terms %}
+  {% set topics = post.terms %}
+{% elif term %}
+  {% set topics = [term] %}
+{% endif %}
+
+<footer class="site-foot" id="site-foot">
+  {# 单列编辑式版面没有侧栏：sidebar.widgets 落在页脚上方，避免插件功能被静默丢弃。
+     slot() 返回 SafeString（恒为真值），必须用 .length 判断是否真的为空。 #}
+  {% set sidebarWidgets = slot('sidebar.widgets') %}
+  {% if sidebarWidgets and sidebarWidgets.length %}
+    <div class="foot-widgets"><div class="shell">{{ sidebarWidgets }}</div></div>
+  {% endif %}
+
+  <div class="shell">
+    <div class="foot-grid">
+      <div>
+        <p class="foot-brand">{{ site.title }}.</p>
+        <p class="foot-note">{{ site.description or theme.settings.taglineText }}</p>
+      </div>
+
+      <nav class="foot-col" aria-label="浏览">
+        <span class="label">浏览</span>
+        <a href="{{ url('home') }}">首页</a>
+        {% if theme.settings.showSearchEntry and has_feature('search') %}
+          <a href="{{ url('search') }}">搜索</a>
+        {% endif %}
+        {% if theme.settings.showLinksEntry and url('links') != '#' %}
+          <a href="{{ url('links') }}">友情链接</a>
+        {% endif %}
+        {% if theme.settings.aboutSlug and url('page.show', { slug: theme.settings.aboutSlug }) != '#' %}
+          <a href="{{ url('page.show', { slug: theme.settings.aboutSlug }) }}">关于</a>
+        {% endif %}
+        {% if theme.settings.showRss and theme.settings.feedPath %}
+          <a href="{{ theme.settings.feedPath }}" data-no-swup>RSS 订阅</a>
+        {% endif %}
+      </nav>
+
+      {% if topics.length %}
+        <nav class="foot-col" aria-label="主题">
+          <span class="label">主题</span>
+          {% for itemTerm in topics %}
+            <a href="{{ itemTerm.url or (url('term.category', { slug: itemTerm.slug }) if itemTerm.type == 'category' else url('term.tag', { slug: itemTerm.slug })) }}">{{ itemTerm.name }}</a>
+          {% endfor %}
+        </nav>
+      {% endif %}
+    </div>
+
+    {% if theme.settings.socialLinks and theme.settings.socialLinks.length %}
+      <div class="foot-social">
+        {% for row in theme.settings.socialLinks %}
+          {% set parts = row.split('|') %}
+          {% if parts.length > 1 %}
+            <a href="{{ parts[1] | trim }}" rel="noopener noreferrer nofollow" target="_blank">{{ parts[0] | trim }}</a>
+          {% else %}
+            <span class="label">{{ row }}</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="foot-base">
+      <span>
+        {{ theme.settings.footerText }}
+        {% if theme.settings.icpLink %}
+          · <a href="{{ theme.settings.icpLink }}" rel="noopener noreferrer nofollow" target="_blank">备案信息</a>
+        {% endif %}
+      </span>
+      <a class="to-top" href="#main" data-to-top>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        回到顶部
+      </a>
+    </div>
+
+    {{ slot('footer.widgets') }}
+  </div>
+</footer>

@@ -1,0 +1,71 @@
+{#
+  右侧编号目录抽屉（Floating Index 的展开态）。
+
+  入口按后端实际能力条件渲染：
+  - 友情链接插件没有能力契约（`has_feature` 对它恒为 false），
+    因此用 `url('links') != '#'` 判断路由是否注册——未注册时 url() 会降级为 '#'。
+  - 关于页由主题设置 aboutSlug 指定，留空即不显示入口。
+#}
+{% set linksUrl = url('links') %}
+{% set aboutUrl = url('page.show', { slug: theme.settings.aboutSlug }) if theme.settings.aboutSlug else '#' %}
+{% set hasSearch = theme.settings.showSearchEntry and has_feature('search') %}
+{% set hasLinks = theme.settings.showLinksEntry and linksUrl != '#' %}
+{% set hasAbout = theme.settings.aboutSlug and aboutUrl != '#' %}
+{% set no = 1 %}
+<aside class="drawer" data-drawer="index" id="index-drawer" role="dialog" aria-modal="true" aria-labelledby="index-drawer-title" inert>
+  <div class="drawer-head">
+    <span class="label" id="index-drawer-title">INDEX · 目录</span>
+    <button class="icon-btn" type="button" data-drawer-close aria-label="关闭目录">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body">
+    <nav class="index-list" aria-label="站点导航">
+      <a class="index-item" href="{{ url('home') }}"{% if page.kind == 'home' %} aria-current="page"{% endif %}>
+        <span class="no">{{ ('0' + no) if no < 10 else no }}</span>
+        <span class="nm"><strong>首页 · Journal</strong><span>最新的记录与精选</span></span>
+        <span class="go" aria-hidden="true">↗</span>
+      </a>
+      {% set no = no + 1 %}
+
+      {% if hasSearch %}
+        <a class="index-item" href="{{ url('search') }}"{% if page.kind == 'search' %} aria-current="page"{% endif %}>
+          <span class="no">{{ ('0' + no) if no < 10 else no }}</span>
+          <span class="nm"><strong>搜索 · Search</strong><span>在全部文章里查找</span></span>
+          <span class="go" aria-hidden="true">↗</span>
+        </a>
+        {% set no = no + 1 %}
+      {% endif %}
+
+      {% if hasLinks %}
+        <a class="index-item" href="{{ linksUrl }}"{% if page.kind == 'links' %} aria-current="page"{% endif %}>
+          <span class="no">{{ ('0' + no) if no < 10 else no }}</span>
+          <span class="nm"><strong>友情链接 · Links</strong><span>一些长期阅读的站点</span></span>
+          <span class="go" aria-hidden="true">↗</span>
+        </a>
+        {% set no = no + 1 %}
+      {% endif %}
+
+      {% if hasAbout %}
+        <a class="index-item" href="{{ aboutUrl }}"{% if page.kind == 'page' %} aria-current="page"{% endif %}>
+          <span class="no">{{ ('0' + no) if no < 10 else no }}</span>
+          <span class="nm"><strong>关于 · About</strong><span>关于这个站点和我</span></span>
+          <span class="go" aria-hidden="true">↗</span>
+        </a>
+        {% set no = no + 1 %}
+      {% endif %}
+
+      {% if theme.settings.showRss and theme.settings.feedPath %}
+        <a class="index-item" href="{{ theme.settings.feedPath }}" data-no-swup>
+          <span class="no">{{ ('0' + no) if no < 10 else no }}</span>
+          <span class="nm"><strong>订阅 · RSS</strong><span>订阅更新</span></span>
+          <span class="go" aria-hidden="true">↗</span>
+        </a>
+      {% endif %}
+    </nav>
+    {# slot() 返回 SafeString（恒为真值），必须用 .length 判断是否真的为空，否则会留下空区块 #}
+    {% set navSlot = slot('header.navigation') %}
+    {% if navSlot and navSlot.length %}<div class="drawer-nav" aria-label="站点导航（插件）">{{ navSlot }}</div>{% endif %}
+  </div>
+  <div class="drawer-foot">{{ theme.settings.indexNote }}</div>
+</aside>

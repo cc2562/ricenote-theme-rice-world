@@ -1,0 +1,17 @@
+{#
+  纯文字列表行（归档与搜索共用）：不使用图片拼版，只靠日期 + 标题 + 分类构成层级。
+  宏返回值不会被自动转义，因此可以直接输出标记。
+#}
+{% import "partials/date-macros.njk" as dates with context %}
+
+{% macro row(item) %}
+  <a class="archive-row" href="{{ item.url }}">
+    {% if item.publishedAt %}
+      <time class="date" datetime="{{ dates.iso(item.publishedAt) }}">{{ dates.editorial(item.publishedAt) }}</time>
+    {% else %}
+      <span class="date" aria-hidden="true">—</span>
+    {% endif %}
+    <span class="ttl">{{ item.title }}</span>
+    <span class="cat">{% if item.terms and item.terms.length %}{{ item.terms[0].name }}{% endif %}</span>
+  </a>
+{% endmacro %}

@@ -1,0 +1,33 @@
+{#
+  独立页面（kind = page）的默认版式。
+  页面正文在 `content` 变量里（不是 page）：content.title / content.html / content.updatedAt。
+  pages 插件未启用时不会有该路由，但所有访问仍然判空，避免渲染出错。
+#}
+{% extends "layout.njk" %}
+
+{% block title %}{{ page.title }} · {{ site.title }}{% endblock %}
+{% block description %}{{ seoDescription or site.description }}{% endblock %}
+
+{% block content %}
+  {% include "partials/header-compact.njk" %}
+  <main id="main">
+    <div class="shell shell-narrow">
+      <div class="article-head">
+        <p class="label">Page · 页面</p>
+        <h1 class="article-title">{% if content %}{{ content.title }}{% else %}{{ page.title }}{% endif %}</h1>
+        {% if content and content.updatedAt %}
+          <div class="article-byline">
+            <span>最后更新 <time datetime="{{ content.updatedAt | date('YYYY-MM-DD') }}">{{ content.updatedAt | date('YYYY-MM-DD') }}</time></span>
+          </div>
+        {% endif %}
+      </div>
+      <article class="prose" data-prose>
+        {% if content and content.html %}
+          {{ content.html }}
+        {% else %}
+          <p class="muted">该页面暂无正文。</p>
+        {% endif %}
+      </article>
+    </div>
+  </main>
+{% endblock %}

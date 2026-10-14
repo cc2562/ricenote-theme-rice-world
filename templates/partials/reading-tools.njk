@@ -1,0 +1,36 @@
+{# 阅读设置抽屉：字号三级 / 阅读主题 / 复制链接 / 回到顶部；偏好存 localStorage 但不是阅读前提 #}
+{% if theme.settings.showReadingTools %}
+  <aside class="drawer" data-drawer="tools" id="tools-drawer" role="dialog" aria-modal="true" aria-labelledby="tools-drawer-title" inert>
+    <div class="drawer-head">
+      <span class="label" id="tools-drawer-title">阅读设置</span>
+      <button class="icon-btn" type="button" data-drawer-close aria-label="关闭阅读设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="tool-group">
+        <span class="label">正文字号</span>
+        <div class="segmented" role="group" aria-label="正文字号">
+          <button type="button" data-size-set="s" aria-pressed="false">小</button>
+          <button type="button" data-size-set="m" aria-pressed="false">标准</button>
+          <button type="button" data-size-set="l" aria-pressed="false">大</button>
+        </div>
+        <p class="tool-note">只作用于文章正文，导航与界面保持原尺寸。选择保存在本机浏览器。</p>
+      </div>
+      <div class="tool-group">
+        <span class="label">阅读主题</span>
+        <div class="segmented" role="group" aria-label="阅读主题">
+          <button type="button" data-theme-set="light" aria-pressed="false">浅色</button>
+          <button type="button" data-theme-set="dark" aria-pressed="false">深色</button>
+          <button type="button" data-theme-set="system" aria-pressed="false">跟随系统</button>
+        </div>
+        <p class="tool-note">深色模式使用独立的语义 token，而不是简单地把浅色反转。</p>
+      </div>
+      <div class="tool-group">
+        <span class="label">文章</span>
+        <button class="btn" type="button" data-copy-link>复制文章链接</button>
+        <button class="btn" type="button" data-to-top>回到顶部</button>
+      </div>
+    </div>
+  </aside>
+{% endif %}

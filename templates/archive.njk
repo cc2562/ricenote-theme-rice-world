@@ -1,0 +1,49 @@
+{#
+  分类 / 标签归档页（kind = archive）。
+  ricenote 没有独立的 /archive 路由，归档由分类与标签页产出（term.category / term.tag），
+  因此这里按 term 输出标题与说明，并把文章按年份分组。
+#}
+{% extends "layout.njk" %}
+{% import "partials/list-rows.njk" as rows with context %}
+
+{% block title %}{{ term.name }} · {{ site.title }}{% endblock %}
+
+{% block content %}
+  {% include "partials/header-compact.njk" %}
+  <main id="main">
+    <div class="shell">
+      <div class="page-head">
+        <p class="label">{{ 'Category · 分类' if term.type == 'category' else 'Tag · 标签' }}</p>
+        <h1 class="page-title">{{ term.name }}</h1>
+        <p class="page-lead">
+          共 {{ posts.total }} 篇{% if pagination and pagination.totalPages > 1 %} · 第 {{ pagination.page }} / {{ pagination.totalPages }} 页{% endif %}
+        </p>
+      </div>
+
+      {% if posts and posts.items.length %}
+        {% set groups = [] %}
+        {% for item in posts.items %}
+          {% set groups = groups.concat([{ post: item, year: ((item.publishedAt | date('YYYY')) or '未知年份') }]) %}
+        {% endfor %}
+        <div class="year-list">
+          {% for group in groups | groupby('year') %}
+            <section class="year-block">
+              <div class="year-head">
+                <span class="yr">{{ group.grouper }}</span>
+                <span class="count">{{ group.list | length }} 篇</span>
+                <span class="rule" aria-hidden="true"></span>
+              </div>
+              {% for row in group.list %}{{ rows.row(row.post) }}{% endfor %}
+            </section>
+          {% endfor %}
+        </div>
+        {% include "partials/pagination.njk" %}
+      {% else %}
+        <section class="empty-state">
+          <p class="label">这里还没有内容</p>
+          <p>该{{ '分类' if term.type == 'category' else '标签' }}下暂无已发布文章。</p>
+        </section>
+      {% endif %}
+    </div>
+  </main>
+{% endblock %}

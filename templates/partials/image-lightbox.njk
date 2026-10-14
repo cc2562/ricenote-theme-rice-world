@@ -1,0 +1,11 @@
+{# 图片灯箱：全局持久结构，放在 Swup 替换容器之外 #}
+<div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="图片查看">
+  <button class="lightbox-close" type="button" data-lightbox-close aria-label="关闭图片查看">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  {# 不写 src=""：空 src 会被浏览器解析成当前页 URL 并真的发起一次请求；地址由脚本在打开时注入 #}
+  <figure class="lightbox-inner lightbox-main">
+    <img data-lightbox-img alt="" width="1600" height="900">
+    <figcaption data-lightbox-caption></figcaption>
+  </figure>
+</div>

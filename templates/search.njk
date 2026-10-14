@@ -1,0 +1,57 @@
+{#
+  搜索页（kind = search，由 rice.search 插件提供）。
+  关键词来自 ?q=，结果由服务端渲染——因此关闭 JavaScript 也能搜索。
+  注意：搜索页的 posts.items 是轻量卡片结构（没有 fields），
+  所以这里只输出纯文字列表，不套首页的多图版式。
+#}
+{% extends "layout.njk" %}
+{% import "partials/list-rows.njk" as rows with context %}
+
+{% block title %}搜索 · {{ site.title }}{% endblock %}
+
+{% block content %}
+  {% include "partials/header-compact.njk" %}
+  <main id="main">
+    <div class="shell">
+      <div class="page-head">
+        <p class="label">Search · 搜索</p>
+        <h1 class="page-title">在全部文章里查找</h1>
+      </div>
+
+      <form class="search-form" action="{{ url('search') }}" method="get" role="search">
+        <div class="search-field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          <label class="visually-hidden" for="search-q">搜索关键词</label>
+          <input id="search-q" type="search" name="q"
+                 value="{{ keyword or '' }}" placeholder="输入关键词，例如：主题设置"
+                 autocomplete="off" required>
+        </div>
+        <button class="btn btn-solid" type="submit">搜索</button>
+      </form>
+
+      {% if unavailable %}
+        <section class="empty-state">
+          <p class="label">搜索暂不可用</p>
+          <p>站点的搜索服务未启用，请从首页浏览内容。</p>
+        </section>
+      {% elif not keyword %}
+        <p class="page-lead">输入关键词以检索站内文章与独立页面。</p>
+      {% else %}
+        <p class="page-lead">
+          关键词「{{ keyword }}」共匹配 {{ posts.total }} 条{% if pagination and pagination.totalPages > 1 %} · 第 {{ pagination.page }} / {{ pagination.totalPages }} 页{% endif %}
+        </p>
+        {% if posts and posts.items.length %}
+          <div class="search-list">
+            {% for item in posts.items %}{{ rows.row(item) }}{% endfor %}
+          </div>
+          {% include "partials/pagination.njk" %}
+        {% else %}
+          <section class="empty-state">
+            <p class="label">没有找到匹配的内容</p>
+            <p>试试更短的关键词，或者从首页浏览最新记录。</p>
+          </section>
+        {% endif %}
+      {% endif %}
+    </div>
+  </main>
+{% endblock %}

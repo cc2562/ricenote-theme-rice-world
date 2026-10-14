@@ -1,0 +1,46 @@
+{#
+  首页 Floating Index 刊头：
+  - 左侧品牌名（本页唯一的 h1）与简短的英文副标签；
+  - 右侧 INDEX 是显眼的主要导航入口；导航插件的内容留在同一行但克制；
+  - 刊头随滚动自然移出视野（首版不做吸附），文章页另有紧凑 Header。
+#}
+<header class="masthead" id="masthead">
+  <div class="shell">
+    <div class="masthead-bar">
+      <p class="masthead-kicker">{{ theme.settings.kickerLabel }}</p>
+      <div class="masthead-actions">
+        <div class="masthead-nav">{{ slot('header.navigation') }}</div>
+        <button class="index-trigger" type="button" data-drawer-open="index" aria-expanded="false" aria-controls="index-drawer">
+          <span>Index</span>
+          <span class="index-glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <h1 class="masthead-title">{{ site.title }}.</h1>
+    {% if theme.settings.taglineText %}<p class="masthead-sub">{{ theme.settings.taglineText }}</p>{% endif %}
+
+    {% if theme.settings.showIntro %}
+      <div class="intro">
+        {% if theme.settings.introText %}<p>{{ theme.settings.introText }}</p>{% endif %}
+        {% if theme.settings.homeFacts and theme.settings.homeFacts.length %}
+          <div class="intro-facts">
+            {% for row in theme.settings.homeFacts %}
+              {% set parts = row.split('|') %}
+              <div class="fact">
+                <span class="label">{{ parts[0] | trim }}</span>
+                <strong>{{ (parts[1] | trim) if parts.length > 1 else row }}</strong>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div class="feed-head rule">
+      <span class="label">Latest stories ↓</span>
+    </div>
+  </div>
+</header>

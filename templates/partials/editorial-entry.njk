@@ -1,0 +1,99 @@
+{#
+  首页文章单元（Editorial Entry）：每个单元恰好代表一篇文章。
+
+  调用方需要先 {% set entry = ... %} 与 {% set entryEager = true/false %}。
+  这里也是「首页 0–4 图」数据模型的唯一出口：
+    entry.fields.homeLayout + entry.fields.homeImage1..4 + entry.fields.homeFocus1..4
+  数量降级是确定性的：图片不足时按有效张数落到相称版式，顺序不变，绝不渲染破版。
+#}
+{% import "partials/image.njk" as image with context %}
+{% import "partials/entry-parts.njk" as parts with context %}
+{% set f = entry.fields or {} %}
+{% set LABEL = { text: '纯文字', single: '单图', hero: '通栏大图', background: '背景封面', double: '双图', triple: '三图', quad: '四图' } %}
+
+{# 按 1→4 顺序收集有效图片与各自焦点，缺图不占位 #}
+{% set items = [] %}
+{% if f.homeImage1 %}{% set items = items.concat([{ src: f.homeImage1, focus: f.homeFocus1 }]) %}{% endif %}
+{% if f.homeImage2 %}{% set items = items.concat([{ src: f.homeImage2, focus: f.homeFocus2 }]) %}{% endif %}
+{% if f.homeImage3 %}{% set items = items.concat([{ src: f.homeImage3, focus: f.homeFocus3 }]) %}{% endif %}
+{% if f.homeImage4 %}{% set items = items.concat([{ src: f.homeImage4, focus: f.homeFocus4 }]) %}{% endif %}
+{% set count = items.length %}
+{# eagerCount 若被存成 null/0，回退到默认 2，保证首屏仍有 eager 图片（number 型字段 store 成 null 时会得到 0） #}
+{% set eagerCount = theme.settings.eagerCount | number(2) %}
+{% set budget = (eagerCount if eagerCount > 0 else 2) if entryEager else 0 %}
+
+{# 声明的版式 → 按有效张数做确定性降级 #}
+{% set layout = f.homeLayout or 'text' %}
+{% if count == 0 %}
+  {% set layout = 'text' %}
+{% elif count == 1 %}
+  {% if layout == 'double' or layout == 'triple' or layout == 'quad' %}{% set layout = 'single' %}{% endif %}
+{% elif count == 2 %}
+  {% if layout != 'double' %}{% set layout = 'double' %}{% endif %}
+{% elif count == 3 %}
+  {% if layout != 'triple' %}{% set layout = 'triple' %}{% endif %}
+{% else %}
+  {% if layout != 'quad' %}{% set layout = 'quad' %}{% endif %}
+{% endif %}
+
+{% if layout == 'text' %}
+  <article class="entry entry--text" data-entry>
+    <div class="entry-text">
+      <div class="entry-head">{{ parts.meta(entry, LABEL[layout]) }}</div>
+      {{ parts.heading(entry) }}
+      {{ parts.foot(entry) }}
+    </div>
+  </article>
+
+{% elif layout == 'background' %}
+  <article class="entry entry--background" data-entry>
+    <div class="entry-cover">
+      {{ image.slot(items[0].src, '', 'media-background', items[0].focus, budget >= 1) }}
+      <span class="scrim" aria-hidden="true"></span>
+      <div class="cap">
+        {{ parts.meta(entry, LABEL[layout]) }}
+        {{ parts.heading(entry) }}
+      </div>
+    </div>
+  </article>
+
+{% else %}
+  <article class="entry" data-entry>
+    <div class="entry-head">
+      <div class="entry-media">
+        <a class="slot-link" href="{{ entry.url }}" tabindex="-1" aria-hidden="true">
+          {% if layout == 'single' %}
+            {{ image.slot(items[0].src, '', 'media-single', items[0].focus, budget >= 1) }}
+          {% elif layout == 'hero' %}
+            {{ image.slot(items[0].src, '', 'media-hero', items[0].focus, budget >= 1) }}
+          {% elif layout == 'double' %}
+            <div class="media-double">
+              {{ image.slot(items[0].src, '', '', items[0].focus, budget >= 1) }}
+              {{ image.slot(items[1].src, '', '', items[1].focus, budget >= 2) }}
+            </div>
+          {% elif layout == 'triple' %}
+            <div class="media-triple">
+              {{ image.slot(items[0].src, '', 'slot-main', items[0].focus, budget >= 1) }}
+              <div class="col">
+                {{ image.slot(items[1].src, '', '', items[1].focus, budget >= 2) }}
+                {{ image.slot(items[2].src, '', '', items[2].focus, budget >= 3) }}
+              </div>
+            </div>
+          {% elif layout == 'quad' %}
+            <div class="media-quad">
+              {{ image.slot(items[0].src, '', '', items[0].focus, budget >= 1) }}
+              {{ image.slot(items[1].src, '', '', items[1].focus, budget >= 2) }}
+              {{ image.slot(items[2].src, '', '', items[2].focus, budget >= 3) }}
+              {{ image.slot(items[3].src, '', '', items[3].focus, budget >= 4) }}
+            </div>
+          {% endif %}
+        </a>
+      </div>
+      <div class="entry-text">
+        {{ parts.meta(entry, LABEL[layout]) }}
+        {{ parts.heading(entry) }}
+        {{ parts.foot(entry) }}
+      </div>
+    </div>
+  </article>
+{% endif %}

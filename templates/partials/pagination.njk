@@ -1,0 +1,22 @@
+{#
+  分页：优先提供可直接访问的链接（规范 4.1）。
+  后端只提供上一页/下一页地址与总数，因此这里不做页码列表，也不做客户端「加载更多」，
+  以免在没有 JSON 接口的情况下伪造分页状态。
+#}
+{% if pagination and pagination.totalPages > 1 %}
+  <div class="pager">
+    <nav class="pager-pages" aria-label="分页">
+      {% if pagination.hasPrev %}
+        <a href="{{ pagination.prevUrl }}" rel="prev">← 上一页</a>
+      {% else %}
+        <span class="is-disabled">← 上一页</span>
+      {% endif %}
+      <span class="pager-status">第 {{ pagination.page }} / {{ pagination.totalPages }} 页</span>
+      {% if pagination.hasNext %}
+        <a href="{{ pagination.nextUrl }}" rel="next">下一页 →</a>
+      {% else %}
+        <span class="is-disabled">下一页 →</span>
+      {% endif %}
+    </nav>
+  </div>
+{% endif %}

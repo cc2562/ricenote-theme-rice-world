@@ -1,0 +1,23 @@
+{# 404：简明提示 + 首页与搜索入口 #}
+{% extends "layout.njk" %}
+
+{% block title %}页面不存在 · {{ site.title }}{% endblock %}
+
+{% block content %}
+  {% include "partials/header-compact.njk" %}
+  <main id="main">
+    <div class="shell">
+      <section class="empty-state empty-404">
+        <p class="label">404</p>
+        <h1 class="page-title">页面不存在</h1>
+        <p class="page-lead">{{ message or '你访问的页面不存在或已被移除。' }}</p>
+        <div class="empty-actions">
+          <a class="btn btn-solid" href="{{ url('home') }}">回到首页</a>
+          {% if has_feature('search') %}
+            <a class="btn" href="{{ url('search') }}">搜索内容</a>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </main>
+{% endblock %}

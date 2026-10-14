@@ -1,0 +1,83 @@
+{#
+  文章阅读页：紧凑 Header + 阅读进度 + 窄栏正文 + 标签 + 评论。
+  正文优先——不继承首页的多图拼版；文章主图与首页展示图是两个独立概念。
+
+  主图取媒体库封面（post.coverUrl）；没有封面时退回「首页展示图 1」，
+  这样作者填过一次的图片不会在文章页再次要求填写。
+#}
+{% extends "layout.njk" %}
+
+{% block title %}{{ post.title }} · {{ site.title }}{% endblock %}
+{% block description %}{{ seoDescription or post.excerpt or site.description }}{% endblock %}
+
+{% block content %}
+  {% import "partials/image.njk" as image with context %}
+  {% import "partials/date-macros.njk" as dates with context %}
+  {% include "partials/header-compact.njk" %}
+
+  <main id="main">
+    <div class="shell shell-narrow">
+      <div class="article-head">
+        <div class="eyebrow-row">
+          {% if post.terms and post.terms.length %}
+            <span class="label">{{ post.terms[0].name }}</span>
+            <span class="label" aria-hidden="true">/</span>
+          {% endif %}
+          {% if post.publishedAt %}
+            <span class="label"><time datetime="{{ dates.iso(post.publishedAt) }}">{{ dates.editorial(post.publishedAt) }}</time></span>
+          {% endif %}
+        </div>
+        <h1 class="article-title">{{ post.title }}</h1>
+        <div class="article-byline">
+          {% if post.authorName %}<span>{{ post.authorName }}</span>{% endif %}
+          {% if post.updatedAt %}
+            <span>更新于 <time datetime="{{ dates.iso(post.updatedAt) }}">{{ dates.editorial(post.updatedAt) }}</time></span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% set coverSrc = post.coverUrl or (post.fields.homeImage1 if post.fields else '') %}
+      {% if coverSrc %}
+        <figure class="article-cover">
+          {{ image.slot(coverSrc, '', 'media-single', (post.fields.homeFocus1 if post.fields else ''), true, post.title ~ ' · 文章主图') }}
+        </figure>
+      {% endif %}
+
+      {{ slot('post.beforeContent', { postId: post.id }) }}
+
+      <article class="prose" data-prose>
+        {% if post.html %}
+          {{ post.html }}
+        {% else %}
+          <p class="muted">这篇内容暂无正文。</p>
+        {% endif %}
+      </article>
+
+      {{ slot('post.afterContent', { postId: post.id }) }}
+
+      {% if post.terms and post.terms.length %}
+        <div class="article-tags">
+          {% for term in post.terms %}
+            <a class="tag" href="{{ term.url or (url('term.category', { slug: term.slug }) if term.type == 'category' else url('term.tag', { slug: term.slug })) }}">#{{ term.name }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <nav class="article-nav article-nav--single" aria-label="返回站点">
+        <a href="{{ url('home') }}">
+          <span class="label">回到</span>
+          <span class="nm">{{ site.title }} 首页</span>
+        </a>
+      </nav>
+
+      {% if has_feature('comments') %}
+        <section class="comments" aria-labelledby="comments-title">
+          <div class="comments-head">
+            <h2 id="comments-title">评论</h2>
+          </div>
+          {{ slot('post.comments', { postId: post.id }) }}
+        </section>
+      {% endif %}
+    </div>
+  </main>
+{% endblock %}

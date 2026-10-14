@@ -1,0 +1,458 @@
+{
+  "schemaVersion": 1,
+  "id": "rice.world",
+  "name": "Rice World",
+  "description": "Rice World：无边框编辑式个人刊物主题。首页以「一篇文章 = 一个版面单元」呈现，支持 0–4 张图片的七种拼版；文章页为紧凑顶栏的沉浸阅读，含目录抽屉、阅读进度、字号与主题切换、图片懒加载与加载中占位图、友情链接页、短代码与 Swup 页面过渡。配色、版式、图片加载与页脚文案都可在后台「外观中心 → 主题设置」调整。",
+  "version": "1.0.1",
+  "apiVersion": "^1.0.0",
+  "engine": "nunjucks",
+  "author": "Rice World",
+  "license": "MIT",
+  "screenshot": "./screenshot.png",
+  "templates": {
+    "home": "index.njk",
+    "post": "post.njk",
+    "page": "page.njk",
+    "archive": "archive.njk",
+    "search": "search.njk",
+    "links": "links.njk",
+    "404": "404.njk"
+  },
+  "pageTemplates": {
+    "default": {
+      "template": "page.njk",
+      "label": {
+        "zh-CN": "标准页面",
+        "en": "Standard page"
+      },
+      "description": {
+        "zh-CN": "标题 + 正文 + 最后更新时间的常规版式",
+        "en": "Heading, body and last-updated meta"
+      }
+    },
+    "plain": {
+      "template": "page-plain.njk",
+      "label": {
+        "zh-CN": "落地页（无标题）",
+        "en": "Landing page (no heading)"
+      },
+      "description": {
+        "zh-CN": "不输出标题区，适合标题已写在正文中的页面",
+        "en": "Omits the heading block; use when the title lives inside the content"
+      }
+    },
+    "narrow": {
+      "template": "page-narrow.njk",
+      "label": {
+        "zh-CN": "阅读版式（窄栏）",
+        "en": "Reading layout (narrow)"
+      },
+      "description": {
+        "zh-CN": "正文收窄居中，适合关于页、条款与长文",
+        "en": "Narrow centred column for about pages and long-form text"
+      }
+    }
+  },
+  "requires": {
+    "content.posts@1": "^1.0.0"
+  },
+  "contentFields": {
+    "homeLayout": {
+      "type": "select",
+      "label": {
+        "zh-CN": "首页版式",
+        "en": "Home layout"
+      },
+      "description": {
+        "zh-CN": "首页展示这篇文章时使用的图片拼版。纯文字不显示图片；图片不足时自动降级为相称的版式。",
+        "en": "Image layout used on the home feed. Falls back to a matching layout when images are missing."
+      },
+      "default": "text",
+      "options": [
+        {
+          "value": "text",
+          "label": { "zh-CN": "纯文字（0 图）", "en": "Text only (0 images)" }
+        },
+        {
+          "value": "single",
+          "label": { "zh-CN": "单图（1 图，16:9）", "en": "Single image (16:9)" }
+        },
+        {
+          "value": "hero",
+          "label": { "zh-CN": "通栏大图（1 图，21:9）", "en": "Full-width hero (21:9)" }
+        },
+        {
+          "value": "background",
+          "label": { "zh-CN": "背景封面（1 图，标题叠图）", "en": "Background cover (title over image)" }
+        },
+        {
+          "value": "double",
+          "label": { "zh-CN": "双图并置（2 图，4:5）", "en": "Two images (4:5)" }
+        },
+        {
+          "value": "triple",
+          "label": { "zh-CN": "三图主次（3 图，一主两副）", "en": "Three images (one lead, two details)" }
+        },
+        {
+          "value": "quad",
+          "label": { "zh-CN": "四图拼版（4 图，2×2）", "en": "Four images (2×2)" }
+        }
+      ]
+    },
+    "homeImage1": {
+      "type": "image",
+      "label": { "zh-CN": "首页展示图 1", "en": "Home image 1" },
+      "description": { "zh-CN": "填图片地址（如 /media/12 或完整 URL）", "en": "Image URL, e.g. /media/12 or a full URL" },
+      "maxLength": 500
+    },
+    "homeImage2": {
+      "type": "image",
+      "label": { "zh-CN": "首页展示图 2", "en": "Home image 2" },
+      "maxLength": 500
+    },
+    "homeImage3": {
+      "type": "image",
+      "label": { "zh-CN": "首页展示图 3", "en": "Home image 3" },
+      "maxLength": 500
+    },
+    "homeImage4": {
+      "type": "image",
+      "label": { "zh-CN": "首页展示图 4", "en": "Home image 4" },
+      "maxLength": 500
+    },
+    "homeFocus1": {
+      "type": "select",
+      "label": { "zh-CN": "展示图 1 焦点", "en": "Home image 1 focus" },
+      "default": "center",
+      "options": [
+        { "value": "center", "label": { "zh-CN": "居中", "en": "Center" } },
+        { "value": "center 25%", "label": { "zh-CN": "偏上 25%", "en": "Upper 25%" } },
+        { "value": "center 35%", "label": { "zh-CN": "偏上 35%", "en": "Upper 35%" } },
+        { "value": "center 65%", "label": { "zh-CN": "偏下 65%", "en": "Lower 65%" } },
+        { "value": "center 75%", "label": { "zh-CN": "偏下 75%", "en": "Lower 75%" } },
+        { "value": "top", "label": { "zh-CN": "顶部对齐", "en": "Top" } },
+        { "value": "bottom", "label": { "zh-CN": "底部对齐", "en": "Bottom" } },
+        { "value": "left", "label": { "zh-CN": "左侧对齐", "en": "Left" } },
+        { "value": "right", "label": { "zh-CN": "右侧对齐", "en": "Right" } }
+      ]
+    },
+    "homeFocus2": {
+      "type": "select",
+      "label": { "zh-CN": "展示图 2 焦点", "en": "Home image 2 focus" },
+      "default": "center",
+      "options": [
+        { "value": "center", "label": { "zh-CN": "居中", "en": "Center" } },
+        { "value": "center 25%", "label": { "zh-CN": "偏上 25%", "en": "Upper 25%" } },
+        { "value": "center 35%", "label": { "zh-CN": "偏上 35%", "en": "Upper 35%" } },
+        { "value": "center 65%", "label": { "zh-CN": "偏下 65%", "en": "Lower 65%" } },
+        { "value": "center 75%", "label": { "zh-CN": "偏下 75%", "en": "Lower 75%" } },
+        { "value": "top", "label": { "zh-CN": "顶部对齐", "en": "Top" } },
+        { "value": "bottom", "label": { "zh-CN": "底部对齐", "en": "Bottom" } },
+        { "value": "left", "label": { "zh-CN": "左侧对齐", "en": "Left" } },
+        { "value": "right", "label": { "zh-CN": "右侧对齐", "en": "Right" } }
+      ]
+    },
+    "homeFocus3": {
+      "type": "select",
+      "label": { "zh-CN": "展示图 3 焦点", "en": "Home image 3 focus" },
+      "default": "center",
+      "options": [
+        { "value": "center", "label": { "zh-CN": "居中", "en": "Center" } },
+        { "value": "center 25%", "label": { "zh-CN": "偏上 25%", "en": "Upper 25%" } },
+        { "value": "center 35%", "label": { "zh-CN": "偏上 35%", "en": "Upper 35%" } },
+        { "value": "center 65%", "label": { "zh-CN": "偏下 65%", "en": "Lower 65%" } },
+        { "value": "center 75%", "label": { "zh-CN": "偏下 75%", "en": "Lower 75%" } },
+        { "value": "top", "label": { "zh-CN": "顶部对齐", "en": "Top" } },
+        { "value": "bottom", "label": { "zh-CN": "底部对齐", "en": "Bottom" } },
+        { "value": "left", "label": { "zh-CN": "左侧对齐", "en": "Left" } },
+        { "value": "right", "label": { "zh-CN": "右侧对齐", "en": "Right" } }
+      ]
+    },
+    "homeFocus4": {
+      "type": "select",
+      "label": { "zh-CN": "展示图 4 焦点", "en": "Home image 4 focus" },
+      "default": "center",
+      "options": [
+        { "value": "center", "label": { "zh-CN": "居中", "en": "Center" } },
+        { "value": "center 25%", "label": { "zh-CN": "偏上 25%", "en": "Upper 25%" } },
+        { "value": "center 35%", "label": { "zh-CN": "偏上 35%", "en": "Upper 35%" } },
+        { "value": "center 65%", "label": { "zh-CN": "偏下 65%", "en": "Lower 65%" } },
+        { "value": "center 75%", "label": { "zh-CN": "偏下 75%", "en": "Lower 75%" } },
+        { "value": "top", "label": { "zh-CN": "顶部对齐", "en": "Top" } },
+        { "value": "bottom", "label": { "zh-CN": "底部对齐", "en": "Bottom" } },
+        { "value": "left", "label": { "zh-CN": "左侧对齐", "en": "Left" } },
+        { "value": "right", "label": { "zh-CN": "右侧对齐", "en": "Right" } }
+      ]
+    }
+  },
+  "settings": {
+    "appearance": {
+      "label": { "zh-CN": "外观", "en": "Appearance" },
+      "description": { "zh-CN": "配色、宽度、字体与动效总开关", "en": "Colors, width, fonts and motion" },
+      "fields": {
+        "accentColor": {
+          "type": "color",
+          "label": { "zh-CN": "强调色", "en": "Accent color" },
+          "description": { "zh-CN": "用于链接、目录当前项、阅读进度与焦点环", "en": "Used for links, active TOC items, progress and focus rings" },
+          "default": "#806B9B"
+        },
+        "accentSoftColor": {
+          "type": "color",
+          "label": { "zh-CN": "柔和强调色", "en": "Soft accent color" },
+          "description": { "zh-CN": "用于非关键装饰，如序号与细线", "en": "Used for non-critical decoration such as numbering and hairlines" },
+          "default": "#A394BD"
+        },
+        "contentWidth": {
+          "type": "number",
+          "label": { "zh-CN": "首页内容宽度（px）", "en": "Home content width (px)" },
+          "description": { "zh-CN": "设计规范建议 1160", "en": "1160 is recommended by the design spec" },
+          "default": 1160,
+          "min": 960,
+          "max": 1440
+        },
+        "fontFamily": {
+          "type": "select",
+          "label": { "zh-CN": "正文与刊头字体", "en": "Body and masthead font" },
+          "default": "system",
+          "options": [
+            { "value": "system", "label": { "zh-CN": "系统无衬线（推荐）", "en": "System sans-serif (recommended)" } },
+            { "value": "serif", "label": { "zh-CN": "无衬线正文 + 衬线刊头", "en": "Sans body + serif masthead" } }
+          ]
+        },
+        "defaultThemeMode": {
+          "type": "select",
+          "label": { "zh-CN": "默认阅读主题", "en": "Default reading theme" },
+          "default": "system",
+          "options": [
+            { "value": "system", "label": { "zh-CN": "跟随系统", "en": "Follow system" } },
+            { "value": "light", "label": { "zh-CN": "浅色", "en": "Light" } },
+            { "value": "dark", "label": { "zh-CN": "深色", "en": "Dark" } }
+          ]
+        },
+        "enableMotion": {
+          "type": "boolean",
+          "label": { "zh-CN": "启用动效", "en": "Enable motion" },
+          "description": { "zh-CN": "关闭后等同系统的「减少动态效果」，仅保留必要反馈", "en": "When off, behaves like prefers-reduced-motion" },
+          "default": true
+        }
+      }
+    },
+    "image": {
+      "label": { "zh-CN": "图片加载", "en": "Image loading" },
+      "description": { "zh-CN": "懒加载与加载中占位图", "en": "Lazy loading and loading placeholder" },
+      "fields": {
+        "enableLazyLoad": {
+          "type": "boolean",
+          "label": { "zh-CN": "启用图片懒加载", "en": "Enable lazy loading" },
+          "description": { "zh-CN": "关闭后所有图片立即加载", "en": "When off, every image loads immediately" },
+          "default": true
+        },
+        "lazyPlaceholder": {
+          "type": "image",
+          "label": { "zh-CN": "加载中占位图", "en": "Loading placeholder image" },
+          "description": { "zh-CN": "留空则只用占位底色；可填媒体库地址（如 /media/12）", "en": "Leave empty to use the placeholder color only; e.g. /media/12" },
+          "default": ""
+        },
+        "lazyPlaceholderColor": {
+          "type": "color",
+          "label": { "zh-CN": "占位底色", "en": "Placeholder color" },
+          "default": "#F3F0F5"
+        },
+        "lazyPlaceholderFit": {
+          "type": "select",
+          "label": { "zh-CN": "占位图填充方式", "en": "Placeholder image fit" },
+          "default": "cover",
+          "options": [
+            { "value": "cover", "label": { "zh-CN": "裁切填满", "en": "Cover" } },
+            { "value": "contain", "label": { "zh-CN": "完整显示", "en": "Contain" } }
+          ]
+        },
+        "lazyFadeIn": {
+          "type": "boolean",
+          "label": { "zh-CN": "加载完成后淡入", "en": "Fade in after loading" },
+          "default": true
+        },
+        "eagerCount": {
+          "type": "number",
+          "label": { "zh-CN": "首屏立即加载图片数", "en": "Eager images on first screen" },
+          "description": { "zh-CN": "只作用于每页第一个图片区块", "en": "Applies to the first image block of each page" },
+          "default": 2,
+          "min": 1,
+          "max": 4
+        }
+      }
+    },
+    "home": {
+      "label": { "zh-CN": "首页", "en": "Home" },
+      "fields": {
+        "kickerLabel": {
+          "type": "text",
+          "label": { "zh-CN": "刊头英文副标签", "en": "Masthead kicker" },
+          "default": "An independent personal journal",
+          "maxLength": 80
+        },
+        "taglineText": {
+          "type": "text",
+          "label": { "zh-CN": "刊头副标题", "en": "Masthead subtitle" },
+          "default": "A small collection of everyday thoughts.",
+          "maxLength": 120
+        },
+        "introText": {
+          "type": "textarea",
+          "label": { "zh-CN": "简介文字", "en": "Intro text" },
+          "default": "这里存放着一些关于生活的记录。设计、游戏、摄影，以及偶尔冒出来的奇怪想法。",
+          "maxLength": 400
+        },
+        "homeFacts": {
+          "type": "stringList",
+          "label": { "zh-CN": "简介事实条目", "en": "Intro facts" },
+          "description": { "zh-CN": "每行一条，形如「截至今天|12 篇记录」", "en": "One per line, e.g. \"Since 2019|12 stories\"" },
+          "default": [],
+          "maxItems": 6,
+          "maxLength": 120
+        },
+        "showIntro": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示简介区", "en": "Show intro section" },
+          "default": true
+        }
+      }
+    },
+    "navigation": {
+      "label": { "zh-CN": "目录与导航", "en": "Index & navigation" },
+      "fields": {
+        "aboutSlug": {
+          "type": "text",
+          "label": { "zh-CN": "「关于」页面缩略名", "en": "About page slug" },
+          "description": { "zh-CN": "留空则不显示「关于」入口", "en": "Leave empty to hide the About entry" },
+          "default": "about",
+          "maxLength": 120
+        },
+        "showSearchEntry": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示搜索入口", "en": "Show search entry" },
+          "default": true
+        },
+        "showLinksEntry": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示友情链接入口", "en": "Show friend links entry" },
+          "description": { "zh-CN": "友情链接插件未启用时，入口会自动隐藏", "en": "Hidden automatically when the friend-links plugin is disabled" },
+          "default": true
+        },
+        "indexNote": {
+          "type": "text",
+          "label": { "zh-CN": "目录面板页脚文字", "en": "Index panel footnote" },
+          "default": "写完了就发，没有固定的更新频率。",
+          "maxLength": 160
+        }
+      }
+    },
+    "reader": {
+      "label": { "zh-CN": "阅读", "en": "Reading" },
+      "fields": {
+        "showProgress": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示阅读进度线", "en": "Show reading progress" },
+          "default": true
+        },
+        "showToc": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示文章目录", "en": "Show table of contents" },
+          "default": true
+        },
+        "showReadingTools": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示阅读设置", "en": "Show reading settings" },
+          "default": true
+        },
+        "defaultFontSize": {
+          "type": "select",
+          "label": { "zh-CN": "默认正文字号", "en": "Default body size" },
+          "default": "m",
+          "options": [
+            { "value": "s", "label": { "zh-CN": "小", "en": "Small" } },
+            { "value": "m", "label": { "zh-CN": "标准", "en": "Standard" } },
+            { "value": "l", "label": { "zh-CN": "大", "en": "Large" } }
+          ]
+        }
+      }
+    },
+    "links": {
+      "label": { "zh-CN": "友情链接", "en": "Friend links" },
+      "fields": {
+        "linksIntro": {
+          "type": "textarea",
+          "label": { "zh-CN": "友链页说明", "en": "Friend links intro" },
+          "default": "一些长期阅读的站点。",
+          "maxLength": 300
+        },
+        "linksNote": {
+          "type": "text",
+          "label": { "zh-CN": "友链页页脚文字", "en": "Friend links footnote" },
+          "default": "想交换链接可以通过关于页联系我。",
+          "maxLength": 160
+        },
+        "showAvatars": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示头像", "en": "Show avatars" },
+          "default": true
+        },
+        "showDescriptions": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示简介", "en": "Show descriptions" },
+          "default": true
+        },
+        "linkColumns": {
+          "type": "number",
+          "label": { "zh-CN": "桌面列数", "en": "Columns on desktop" },
+          "default": 3,
+          "min": 1,
+          "max": 4
+        },
+        "linkOpenNewTab": {
+          "type": "boolean",
+          "label": { "zh-CN": "在新窗口打开", "en": "Open in new tab" },
+          "default": true
+        }
+      }
+    },
+    "footer": {
+      "label": { "zh-CN": "页脚", "en": "Footer" },
+      "fields": {
+        "footerText": {
+          "type": "text",
+          "label": { "zh-CN": "页脚文字", "en": "Footer text" },
+          "default": "Rice World · 一本持续更新的小刊物",
+          "maxLength": 160
+        },
+        "icpLink": {
+          "type": "url",
+          "label": { "zh-CN": "备案链接", "en": "ICP link" },
+          "description": { "zh-CN": "可留空", "en": "Optional" },
+          "default": ""
+        },
+        "showRss": {
+          "type": "boolean",
+          "label": { "zh-CN": "显示订阅入口", "en": "Show RSS entry" },
+          "description": { "zh-CN": "需要启用「订阅源」插件", "en": "Requires the feed plugin" },
+          "default": true
+        },
+        "feedPath": {
+          "type": "text",
+          "label": { "zh-CN": "订阅源地址", "en": "Feed path" },
+          "description": { "zh-CN": "订阅源插件默认输出 /feed.xml", "en": "The feed plugin serves /feed.xml by default" },
+          "default": "/feed.xml",
+          "maxLength": 200
+        },
+        "socialLinks": {
+          "type": "stringList",
+          "label": { "zh-CN": "社交链接", "en": "Social links" },
+          "description": { "zh-CN": "每行一条，形如「名称|https://…」", "en": "One per line, e.g. \"Name|https://…\"" },
+          "default": [],
+          "maxItems": 10,
+          "maxLength": 200
+        }
+      }
+    }
+  }
+}

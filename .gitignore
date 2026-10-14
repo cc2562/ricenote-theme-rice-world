@@ -1,0 +1,10 @@
+# 操作系统噪声
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 主题打包产物（后台上传用的是 ZIP，不进版本管理）
+*.zip
+
+# 本地验证沙箱
+.tmp-verify/
