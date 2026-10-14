@@ -112,6 +112,8 @@ body {
   font-size: var(--fs-body);
   line-height: 1.8;
   font-weight: 400;
+  /* 超长不可断串（URL、连续英文）不再把视口顶宽：正文里会更彻底，见 .prose */
+  overflow-wrap: break-word;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -277,7 +279,8 @@ html { --index-fab-w: 106px; }
   background: color-mix(in oklab, var(--color-bg) 82%, transparent);
   backdrop-filter: blur(12px) saturate(1.08);
   box-shadow: 0 2px 12px var(--color-shadow);
-  transition: opacity var(--duration-page) var(--ease-editorial),
+  transition: top var(--duration-page) var(--ease-editorial),
+              opacity var(--duration-page) var(--ease-editorial),
               transform var(--duration-page) var(--ease-editorial),
               border-color var(--duration-fast) var(--ease-editorial),
               background var(--duration-fast) var(--ease-editorial);
@@ -484,6 +487,14 @@ a:hover > .slot::after,
 .entry-cover .cap .entry-meta,
 .entry-cover .cap .entry-title,
 .entry-cover .cap .entry-excerpt { color: var(--color-on-scrim); }
+/* 叠字里的摘要最多 3 行：它是封面上的次要信息，不能把标题顶到图片之外
+   （顶出去的部分是白字压在浅色页面上，等于看不见） */
+.entry-cover .cap .entry-excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .entry-cover .cap .entry-meta .cat { color: var(--color-on-scrim); }
 .entry-cover .cap .entry-title a:hover { color: var(--color-selection); }
 .entry-cover .cap .sep { background: var(--color-scrim-line); }
@@ -618,7 +629,7 @@ html[data-ratio-cover="2 / 1"] { --ratio-cover: 2 / 1; }
 }
 .index-list .rn-nav-link {
   display: grid;
-  grid-template-columns: 46px 1fr auto;
+  grid-template-columns: 46px minmax(0, 1fr) auto;   /* 长的导航文案不撑宽抽屉 */
   align-items: baseline;
   gap: var(--space-4);
   padding: 18px 8px;
@@ -708,7 +719,9 @@ html[data-ratio-cover="2 / 1"] { --ratio-cover: 2 / 1; }
   line-height: 1.6;
 }
 
-.prose { padding-top: clamp(32px, 4vw, 56px); }
+/* anywhere 而不是 break-word：正文里的超长 URL 会参与最小内容宽度计算，
+   因此即使处在窄栏 / 弹性容器里也不会把整页撑宽 */
+.prose { padding-top: clamp(32px, 4vw, 56px); overflow-wrap: anywhere; }
 .prose > * + * { margin-top: 1.25em; }
 .prose h2 {
   font-size: var(--fs-h2); line-height: 1.3; letter-spacing: -.012em;
@@ -824,7 +837,7 @@ html[data-ratio-cover="2 / 1"] { --ratio-cover: 2 / 1; }
 
 .article-nav {
   margin-top: clamp(48px, 6vw, 72px);
-  display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6);
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6);
 }
 .article-nav a {
   display: grid; gap: 6px;
@@ -1056,6 +1069,11 @@ html[data-ratio-cover="2 / 1"] { --ratio-cover: 2 / 1; }
   .media-double, .media-quad { grid-template-columns: 1fr 1fr; gap: 6px; }
   .media-quad .slot { aspect-ratio: 1 / 1; }
   .entry-media { gap: 6px; }
+  /* 窄屏「背景封面」：封面只有 ~158px 高，而「分类/日期 + 标题 + 摘要」要 ~296px，
+     多出来的部分会被顶到图片上方（白字压在浅色页面上＝看不见）。
+     这里把封面放宽一点给标题留余量，并让叠字只保留分类/日期与标题。 */
+  .media-background { aspect-ratio: 16 / 9; }
+  .entry-cover .cap .entry-excerpt { display: none; }
   .drawer { width: 100vw; border-left: 0; }
   .reader-tools .tool-text { display: none; }
 }
@@ -1131,7 +1149,10 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
 .link-body { display: grid; gap: 4px; min-width: 0; }
 .link-name { font-size: var(--fs-body); font-weight: 600; line-height: 1.4; transition: color var(--duration-fast) linear; }
 .link-card:hover .link-name { color: var(--color-accent); }
-.link-desc { font-size: var(--fs-small); color: var(--color-text-muted); line-height: 1.6; }
+.link-desc {
+  font-size: var(--fs-small); color: var(--color-text-muted); line-height: 1.6;
+  overflow-wrap: anywhere;          /* 站点介绍里出现长串时也不会把卡片撑宽 */
+}
 .links-note {
   margin-top: clamp(32px, 5vw, 56px);
   padding-top: var(--space-6);
@@ -1184,6 +1205,12 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
    .rn-comments__body/meta/list/pager/form、.rn-comment(.has-avatar)__meta/__author/__time/__body/__actions,
    .rn-field、.rn-pager__link。主题只负责样式，不改标记。 */
 .rn-comments__body { display: grid; gap: var(--space-6); }
+/* 网格项默认 min-width: auto：一条含长 URL 的评论就能把整个网格（乃至整篇文档）
+   撑宽、出现横向滚动。逐个放宽最小宽度，并允许长串在任意位置断行。 */
+.rn-comments__body > *,
+.rn-comments__list > *,
+.rn-comments__children > * { min-width: 0; }
+[data-rn-comments] { overflow-wrap: anywhere; }
 .rn-comments__meta {
   font-family: var(--font-mono); font-size: var(--fs-micro);
   letter-spacing: .1em; color: var(--color-text-muted);
@@ -1203,9 +1230,13 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
 .rn-comments__children { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-6); }
 .rn-comments__children {
   margin-top: var(--space-4);
-  padding-left: var(--space-6);
+  /* 缩进按视口收窄：长讨论会叠很多层，固定 24px 在窄屏上会把最深一层推出视口 */
+  padding-left: clamp(12px, 2.4vw, 24px);
   border-left: 1px solid var(--color-divider);
 }
+/* 缩进最多叠加到第 5 层：更深的层不再继续右移，只保留左侧细线作为层级提示 */
+.rn-comments__children .rn-comments__children .rn-comments__children
+  .rn-comments__children .rn-comments__children .rn-comments__children { padding-left: 0; }
 
 .rn-comment { position: relative; margin: 0; }
 /* 有头像时才让出左侧空间（没有头像时不留下空档） */
@@ -1317,6 +1348,14 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
   .rn-comments__fields { grid-template-columns: minmax(0, 1fr); }
   .rn-comment.has-avatar { padding-left: 52px; }
   .rn-comment__avatar { width: 38px; height: 38px; }
+}
+@media (max-width: 920px) {
+  /* 回复的缩进与头像占位都按层叠加：五层深的长讨论会叠加出 ~320px，
+     在 350px 的窄栏里足以把正文挤到一行几个字、甚至把整页推出视口。
+     窄屏上从第 3 层起停止叠加，层级关系继续由左侧细线与作者名承担。 */
+  .rn-comments__children .rn-comments__children { padding-left: 0; }
+  .rn-comments__children .rn-comments__children > .rn-comment.has-avatar { padding-left: 0; }
+  .rn-comments__children .rn-comments__children > .rn-comment > [data-rn-avatar] { display: none; }
 }
 
 /* ── 23. 短代码（主题自定义标记，见 assets/js/shortcodes.js） ─────────── */
