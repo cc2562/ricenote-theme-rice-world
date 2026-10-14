@@ -533,6 +533,7 @@
         var current = document.querySelector('[data-rn-comments]');
         if (!fresh || !current) { return; }
         current.replaceWith(fresh);
+        orderComments();
         ensureCommentPostId();
         initCommentAvatars();
         if (message) { commentFeedback(fresh, message, 'ok'); }
@@ -597,15 +598,78 @@
     });
   }
 
-  /* ── 评论头像：由昵称与作者网址派生（插件不提供邮箱） ──────────────────
-     rice.comments 为隐私刻意不输出评论者邮箱（公开接口 GET /api/comments 也只给
-     id / authorName / authorUrl），而 Gravatar / weavatar 这类服务必须用邮箱哈希，
-     因此邮箱方案在这套契约下永远拿不到头像。主题改用标记里现成的两项：
-       · letter（默认）：昵称首字 + 由昵称决定的低饱和底色，离线、零外部请求；
-       · site：优先用评论者站点图标，本站作者（网址与站点同源）用站点 LOGO。
-     两种模式都退回首字，取不到图时不会留下坏图。头像纯装饰（aria-hidden），
-     作者名仍是文本；脚本不可用时评论完全可读，只是没有头像。 */
+  /* ── 评论头像 ────────────────────────────────────────────────────────
+     rice.comments 1.4 起把作者邮箱开放给主题（评论项上的 data-rn-author-email，
+     访客留空时该属性不存在），插件只交数据、不代劳头像渲染，并提醒：Gravatar 要
+     邮箱的 md5，而浏览器 WebCrypto 不支持 md5 —— 所以这里自带一份实现。
+
+     头像分两层取，任一层取不到都不会留下坏图：
+       1) 有邮箱 → Gravatar / weavatar 的邮箱头像；用 d=404，对方没注册头像时服务端
+          返回 404，我们据此退回下一层，而不是把一个通用剪影当成头像；
+       2) 没有邮箱（或邮箱头像取不到）→ 用标记里现成的信息降级：昵称首字（默认，
+          离线、零外部请求），选「站点图标」时用评论者站点图标，本站作者用站点 LOGO。
+     头像是纯装饰（aria-hidden），作者名仍是文本；脚本不可用时评论完全可读。 */
   var AVATAR_TONES = 4;
+
+  /** 标准 MD5（浏览器没有内置实现；Gravatar 与 weavatar 都用邮箱的 md5 十六进制） */
+  function md5Hex(input) {
+    var message = new TextEncoder().encode(String(input));
+    var originalLength = message.length;
+    var totalLength = (((originalLength + 8) >> 6) + 1) << 6;
+    var buffer = new Uint8Array(totalLength);
+    buffer.set(message);
+    buffer[originalLength] = 0x80;
+    var bits = originalLength * 8;
+    buffer[totalLength - 8] = bits & 0xff;
+    buffer[totalLength - 7] = (bits >>> 8) & 0xff;
+    buffer[totalLength - 6] = (bits >>> 16) & 0xff;
+    buffer[totalLength - 5] = (bits >>> 24) & 0xff;
+
+    var shifts = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
+    var constants = [];
+    for (var k = 0; k < 64; k += 1) {
+      constants[k] = Math.floor(Math.abs(Math.sin(k + 1)) * 4294967296);
+    }
+
+    var a = 0x67452301;
+    var b = 0xefcdab89;
+    var c = 0x98badcfe;
+    var d = 0x10325476;
+
+    for (var offset = 0; offset < totalLength; offset += 64) {
+      var words = [];
+      for (var w = 0; w < 16; w += 1) {
+        words[w] = buffer[offset + w * 4] | (buffer[offset + w * 4 + 1] << 8)
+          | (buffer[offset + w * 4 + 2] << 16) | (buffer[offset + w * 4 + 3] << 24);
+      }
+      var aa = a;
+      var bb = b;
+      var cc = c;
+      var dd = d;
+      for (var i = 0; i < 64; i += 1) {
+        var f;
+        var g;
+        if (i < 16) { f = (bb & cc) | (~bb & dd); g = i; }
+        else if (i < 32) { f = (dd & bb) | (~dd & cc); g = (5 * i + 1) % 16; }
+        else if (i < 48) { f = bb ^ cc ^ dd; g = (3 * i + 5) % 16; }
+        else { f = cc ^ (bb | ~dd); g = (7 * i) % 16; }
+        f = (f + aa + constants[i] + words[g]) | 0;
+        aa = dd; dd = cc; cc = bb;
+        var shift = shifts[(i >> 4) * 4 + (i % 4)];
+        bb = (bb + ((f << shift) | (f >>> (32 - shift)))) | 0;
+      }
+      a = (a + aa) | 0; b = (b + bb) | 0; c = (c + cc) | 0; d = (d + dd) | 0;
+    }
+
+    var toHex = function (value) {
+      var out = '';
+      for (var index = 0; index < 4; index += 1) {
+        out += ('0' + ((value >>> (index * 8)) & 0xff).toString(16)).slice(-2);
+      }
+      return out;
+    };
+    return toHex(a) + toHex(b) + toHex(c) + toHex(d);
+  }
 
   /** 取昵称首个字形：按码点切分，避免把代理对（emoji）切成半个字符 */
   function firstGlyph(name) {
@@ -635,7 +699,28 @@
     }
   }
 
-  function avatarNode(name, url) {
+  /** 邮箱头像地址：服务地址可在后台改，末尾斜杠容错 */
+  function emailAvatarSource(email) {
+    var address = String(email || '').replace(/^\s+|\s+$/g, '').toLowerCase();
+    if (!address) { return ''; }
+    var base = attr('data-avatar-base', 'https://weavatar.com/avatar/');
+    if (!base) { return ''; }
+    if (base.charAt(base.length - 1) !== '/') { base += '/'; }
+    return base + md5Hex(address) + '?d=404&s=88';
+  }
+
+  function avatarSource(url, email) {
+    var fromEmail = emailAvatarSource(email);
+    if (fromEmail) { return fromEmail; }
+    /* 没有邮箱时的降级：本站作者用站点 LOGO，其余按「头像样式」决定 */
+    var siteOrigin = originOf(attr('data-site-origin', ''));
+    var origin = url ? originOf(url) : '';
+    if (origin && siteOrigin && origin === siteOrigin) { return attr('data-site-logo', ''); }
+    if (origin && attr('data-avatar-style', 'letter') === 'site') { return origin + '/favicon.ico'; }
+    return '';
+  }
+
+  function avatarNode(name, url, email) {
     var box = document.createElement('span');
     box.className = 'rn-comment__avatar is-letter';
     box.setAttribute('data-rn-avatar', '');
@@ -643,15 +728,7 @@
     box.setAttribute('data-tone', String(toneOf(name)));
     box.textContent = firstGlyph(name);
 
-    var siteOrigin = originOf(attr('data-site-origin', ''));
-    var logo = attr('data-site-logo', '');
-    var origin = url ? originOf(url) : '';
-    var source = '';
-    if (origin && siteOrigin && origin === siteOrigin) {
-      source = logo;                              // 本站作者：用站点 LOGO，不请求外部
-    } else if (origin && attr('data-avatar-style', 'letter') === 'site') {
-      source = origin + '/favicon.ico';           // 评论者自己的站点图标
-    }
+    var source = avatarSource(url, email);
     if (!source) { return box; }
 
     var image = document.createElement('img');
@@ -661,7 +738,7 @@
     image.width = 44;
     image.height = 44;
     image.src = source;
-    image.onerror = function () {                 // 取不到：退回昵称首字，不留坏图
+    image.onerror = function () {                 // 没注册头像 / 图标取不到：退回昵称首字
       image.remove();
       box.textContent = firstGlyph(name);
       box.classList.add('is-letter');
@@ -681,9 +758,51 @@
       var reply = item.querySelector('[data-rn-reply]');
       var name = (author && author.textContent) || (reply && reply.getAttribute('data-author')) || '';
       var link = author && author.tagName === 'A' ? author.getAttribute('href') : '';
-      item.insertBefore(avatarNode(name, link), item.firstChild);
+      var email = item.getAttribute('data-rn-author-email') || '';
+      item.insertBefore(avatarNode(name, link, email), item.firstChild);
       item.classList.add('has-avatar');
     });
+  }
+
+  /* ── 评论顺序：插件固定「最早在前」，由主题按设置重排 ──────────────────
+     插件的前台线程写死 `ORDER BY created_at ASC`，且没有排序设置，所以顺序只能在
+     主题侧调：每一层（顶层列表与各层回复）都按 created_at DESC, id DESC 重排，
+     与插件后台列表同一口径。刻意用 DOM 重排而不是 CSS column-reverse —— 读屏与
+     键盘的阅读顺序必须与视觉一致。顺序已经正确时不动 DOM（避免无谓重排打断过渡
+     与焦点）；没有脚本时退回插件原顺序，内容完整可读。 */
+  function commentTimeOf(item) {
+    var time = item.querySelector('time[datetime]');
+    var parsed = time ? Date.parse(time.getAttribute('datetime')) : NaN;
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function commentIdOf(item) {
+    var matched = /(\d+)/.exec(item.id || '');
+    return matched ? Number(matched[1]) : 0;
+  }
+
+  function sortCommentList(list) {
+    var items = Array.prototype.filter.call(list.children, function (node) {
+      return node.classList && node.classList.contains('rn-comment');
+    });
+    if (items.length < 2) { return; }
+    var sorted = items.slice().sort(function (a, b) {
+      var diff = commentTimeOf(b) - commentTimeOf(a);
+      return diff !== 0 ? diff : commentIdOf(b) - commentIdOf(a);
+    });
+    var changed = sorted.some(function (item, index) { return item !== items[index]; });
+    if (!changed) { return; }
+    sorted.forEach(function (item) { list.appendChild(item); });
+  }
+
+  function orderComments() {
+    if (attr('data-comment-order', 'newest') !== 'newest') { return; }
+    var root = document.querySelector('[data-rn-comments]');
+    if (!root) { return; }
+    Array.prototype.forEach.call(
+      root.querySelectorAll('.rn-comments__list, .rn-comments__children'),
+      sortCommentList
+    );
   }
 
   /* ── 启动（可重复调用：首次加载与 Swup 每次替换后都走这里） ─────────── */
@@ -701,6 +820,7 @@
 
     initProseImages();
     initCodeBlocks();
+    orderComments();
     ensureCommentPostId();
     initCommentAvatars();
     scanImages();
@@ -718,6 +838,7 @@
   var HTML_ATTRS = ['lang', 'data-page', 'data-font', 'data-default-theme', 'data-default-size',
     'data-motion', 'data-lazy', 'data-ph-fit', 'data-fade', 'data-eager',
     'data-ratio-single', 'data-ratio-cover', 'data-avatar', 'data-avatar-style',
+    'data-avatar-base', 'data-comment-order',
     'data-site-origin', 'data-site-logo', 'data-index-pos'];
 
   /**

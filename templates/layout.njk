@@ -30,7 +30,11 @@
       data-ratio-cover="{{ theme.settings.homeCoverRatio or '20 / 9' }}"
       data-avatar="{{ 'on' if theme.settings.commentAvatar != false else 'off' }}"
       data-avatar-style="{{ theme.settings.commentAvatarStyle or 'letter' }}"
-      {#- 头像只由标记里现成的两项派生：同源作者用站点 LOGO，其余看「头像样式」 -#}
+      {#- 邮箱头像的服务地址（Gravatar 协议）；空值由 or 兜底，末尾斜杠由脚本容错 -#}
+      data-avatar-base="{{ theme.settings.commentAvatarBase or 'https://weavatar.com/avatar/' }}"
+      {#- 插件前台线程固定「最早在前」，newest 时由主题在渲染后重排 -#}
+      data-comment-order="{{ theme.settings.commentOrder or 'newest' }}"
+      {#- 无邮箱时头像的降级依据：同源作者用站点 LOGO，其余看「站点图标」 -#}
       data-site-origin="{{ site.url }}"
       data-site-logo="{{ site.logoUrl or '' }}"
       data-index-pos="{{ theme.settings.floatingIndexPosition or 'bottom-right' }}">
