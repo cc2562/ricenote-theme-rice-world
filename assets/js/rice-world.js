@@ -726,25 +726,28 @@
     box.setAttribute('data-rn-avatar', '');
     box.setAttribute('aria-hidden', 'true');
     box.setAttribute('data-tone', String(toneOf(name)));
-    box.textContent = firstGlyph(name);
 
-    var source = avatarSource(url, email);
-    if (!source) { return box; }
-
-    var image = document.createElement('img');
-    image.alt = '';
-    image.loading = 'lazy';
-    image.decoding = 'async';
-    image.width = 44;
-    image.height = 44;
-    image.src = source;
-    image.onerror = function () {                 // 没注册头像 / 图标取不到：退回昵称首字
-      image.remove();
+    /* 首字降级：清掉图片再写首字，保证盒子里永远只有「一张图」或「一个字」 */
+    var fallbackToLetter = function () {
+      var image = box.querySelector('img');
+      if (image) { image.remove(); }
       box.textContent = firstGlyph(name);
       box.classList.add('is-letter');
     };
+
+    var source = avatarSource(url, email);
+    if (!source) { fallbackToLetter(); return box; }
+
+    var picture = document.createElement('img');
+    picture.alt = '';
+    picture.loading = 'lazy';
+    picture.decoding = 'async';
+    picture.width = 44;
+    picture.height = 44;
+    picture.src = source;
+    picture.onerror = fallbackToLetter;          // 没注册头像 / 图标取不到：退回昵称首字
     box.classList.remove('is-letter');
-    box.appendChild(image);
+    box.appendChild(picture);
     return box;
   }
 
