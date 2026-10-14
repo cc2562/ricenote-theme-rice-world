@@ -251,22 +251,27 @@ hr { border: 0; border-top: 1px solid var(--color-divider); margin: 0; }
 }
 .index-trigger:hover { border-color: var(--color-text-muted); }
 .index-trigger .index-glyph {
-  width: 26px; height: 26px; border-radius: 6px;
+  width: 26px; height: 26px;
   display: grid; place-items: center;
-  background: var(--color-surface-soft);
-  color: var(--color-accent);
+  color: var(--color-accent);          /* 图标不铺底色，只用强调色描线 */
 }
-.index-trigger .index-glyph svg { width: 14px; height: 14px; }
+.index-trigger .index-glyph svg { width: 15px; height: 15px; }
 
 /* 悬浮 INDEX：全站唯一的目录入口，首页与文章页共用同一个（partials/index-fab.njk）。
-   固定定位后不受页头布局影响 —— 窄屏页头改成纵向堆叠时，过去那个按钮会被推到左侧。
+   它固定在与「页头里那个按钮」完全相同的位置上，只是不再随页头的排版与滚动走：
+   - 水平：对齐内容区右缘（宽屏时是 (100vw - 站宽)/2 + 页边距，窄屏回落到页边距）；
+   - 垂直：桌面 10px / 窄屏 8px（页头行为 64 / 60，按钮 44 高，正好垂直居中）；
+     首页刊头的首行从 clamp(28px,5vw,56px) 开始，所以首页单独对齐到那里。
+   页头工具（目录 / 设置）用 padding-right 让出按钮原来的宽度，视觉上与改造前一致。
    z-index 夹在吸顶页头（40）与抽屉遮罩（60）之间；抽屉打开时淡出并让出点击。 */
+html { --index-fab-w: 106px; }
 .index-fab {
   position: fixed;
-  right: var(--page-gutter);
-  bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+  top: 10px;
+  right: max(var(--page-gutter), calc((100vw - var(--width-site)) / 2 + var(--page-gutter)));
   z-index: 45;
-  min-height: 46px;
+  min-width: var(--index-fab-w);
+  min-height: 44px;
   padding: 8px 8px 8px 16px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--color-bg) 82%, transparent);
@@ -282,21 +287,27 @@ hr { border: 0; border-top: 1px solid var(--color-divider); margin: 0; }
   border-color: var(--color-text-muted);
 }
 .index-fab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
-/* 右上：避开吸顶的紧凑页头（≈64px），不让两组控件叠在一起 */
-html[data-index-pos="top-right"] .index-fab {
-  top: calc(78px + env(safe-area-inset-top, 0px));
-  bottom: auto;
+/* 首页：对齐刊头首行（刊头本身会自然滚出，按钮留在原处不动） */
+html[data-page="home"] .index-fab { top: clamp(28px, 5vw, 56px); }
+/* 页头工具让出悬浮按钮占的那一格 */
+.reader-tools { padding-right: calc(var(--index-fab-w) + var(--space-4)); }
+html[data-index-pos="bottom-right"] .index-fab {
+  top: auto;
+  bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
 }
+html[data-index-pos="bottom-right"] .reader-tools { padding-right: 0; }
 html.drawer-open .index-fab {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(-6px);
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) { .index-fab { transition: none; } }
 html[data-motion="off"] .index-fab { transition: none; }
 @media (max-width: 600px) {
-  /* 窄屏只留图标：悬浮块不遮挡正文 */
-  .index-fab { padding: 8px; }
+  /* 窄屏只留图标：按钮缩成 44×44，页头让出的宽度同步收窄 */
+  html { --index-fab-w: 44px; }
+  .index-fab { top: 8px; padding: 8px; }
+  html[data-page="home"] .index-fab { top: clamp(28px, 5vw, 56px); }
   .index-fab-label { display: none; }
 }
 
@@ -1261,6 +1272,10 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4);
   font-size: var(--fs-small); color: var(--color-text-muted);
 }
+/* display 会盖掉浏览器对 [hidden] 的默认隐藏，这两个由脚本切换显隐的块必须显式处理 */
+.rn-comments__replying[hidden],
+.rn-comments__message[hidden] { display: none; }
+.rn-comments__submit:disabled { opacity: .6; cursor: progress; }
 .rn-comments__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
 .rn-field { display: grid; gap: 6px; }
 .rn-field__label { font-size: var(--fs-meta); color: var(--color-text-muted); }

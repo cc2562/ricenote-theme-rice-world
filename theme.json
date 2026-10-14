@@ -3,7 +3,7 @@
   "id": "rice.world",
   "name": "Rice World",
   "description": "Rice World：无边框编辑式个人刊物主题。首页以「一篇文章 = 一个版面单元」呈现，支持 0–4 张图片的七种拼版；文章页为紧凑顶栏的沉浸阅读，含目录抽屉、阅读进度、字号与主题切换、图片懒加载与加载中占位图、友情链接页、短代码与 Swup 页面过渡。配色、版式、图片加载与页脚文案都可在后台「外观中心 → 主题设置」调整。",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "apiVersion": "^1.0.0",
   "engine": "nunjucks",
   "author": "Rice World",
@@ -393,11 +393,11 @@
         "floatingIndexPosition": {
           "type": "select",
           "label": { "zh-CN": "悬浮 INDEX 位置", "en": "Floating INDEX position" },
-          "description": { "zh-CN": "首页与文章页共用同一个悬浮入口；选「右上」时自动避开吸顶页头，窄屏只显示图标", "en": "One floating entry shared by every page; the top-right option keeps clear of the sticky header" },
-          "default": "bottom-right",
+          "description": { "zh-CN": "首页与文章页共用同一个悬浮入口；「页头位置」与改造前页头里的按钮完全重合（页头工具会自动让出这一格）", "en": "One floating entry shared by every page; \"Header position\" sits exactly where the header button used to be" },
+          "default": "top-right",
           "options": [
-            { "value": "bottom-right", "label": { "zh-CN": "右下角（推荐）", "en": "Bottom right (recommended)" } },
-            { "value": "top-right", "label": { "zh-CN": "右上角", "en": "Top right" } }
+            { "value": "top-right", "label": { "zh-CN": "页头位置（推荐）", "en": "Header position (recommended)" } },
+            { "value": "bottom-right", "label": { "zh-CN": "右下角", "en": "Bottom right" } }
           ]
         }
       }

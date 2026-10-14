@@ -334,6 +334,21 @@
       return;
     }
 
+    /* 评论：回复 / 取消回复（表单标记由 rice.comments 插件提供） */
+    var replyBtn = event.target.closest('[data-rn-reply]');
+    if (replyBtn) {
+      var replyBox = commentRootOf(replyBtn);
+      if (replyBox) {
+        setCommentReply(replyBox, replyBtn.getAttribute('data-comment-id'), replyBtn.getAttribute('data-author'));
+      }
+      return;
+    }
+    if (event.target.closest('[data-rn-cancel-reply]')) {
+      var cancelBox = commentRootOf(event.target);
+      if (cancelBox) { clearCommentReply(cancelBox); }
+      return;
+    }
+
     var themeBtn = event.target.closest('[data-theme-set]');
     if (themeBtn) {
       var mode = themeBtn.getAttribute('data-theme-set');
@@ -416,6 +431,14 @@
     }
   });
 
+  /* 评论表单：接管提交（插件约定用 JSON 提交，原生提交会丢 postId） */
+  document.addEventListener('submit', function (event) {
+    var form = event.target && event.target.closest ? event.target.closest('[data-rn-comment-form]') : null;
+    if (!form) { return; }
+    event.preventDefault();
+    submitCommentForm(form);
+  });
+
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
       var box = lightboxEl();
@@ -457,6 +480,122 @@
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', function () { measureProse(); onScroll(); }, { passive: true });
   window.addEventListener('hashchange', onScroll);
+
+  /* ── 评论表单：JSON 提交、回复状态与结果提示 ──────────────────────────
+     插件给出的表单只带 data-post-id（没有 postId 隐藏字段），原生提交会让服务端
+     收到 NaN：文章标识非法 → 重定向回首页并附一个通用 error，而首页没有评论区，
+     于是「点了提交什么都没发生」。主题按插件约定改成 fetch JSON 提交，并把返回的
+     结果显示在表单下方的提示条里；同时补一个隐藏的 postId 字段作为无脚本兜底。 */
+  function commentRootOf(node) {
+    return node && node.closest ? node.closest('[data-rn-comments]') : null;
+  }
+
+  function commentFeedback(root, text, tone) {
+    var box = root && root.querySelector('[data-rn-comment-message]');
+    if (!box) { return; }
+    box.textContent = text;
+    box.className = 'rn-comments__message' + (tone ? ' is-' + tone : '');
+    box.hidden = false;
+  }
+
+  function setCommentReply(root, id, author) {
+    var holder = root.querySelector('[data-rn-parent-id]');
+    var bar = root.querySelector('[data-rn-replying]');
+    var label = root.querySelector('[data-rn-replying-text]');
+    if (holder) { holder.value = id || ''; }
+    if (label) { label.textContent = author ? '正在回复 ' + author : '正在回复'; }
+    if (bar) { bar.hidden = false; }
+    var content = root.querySelector('[name="content"]');
+    if (content) { content.focus(); }
+  }
+
+  function clearCommentReply(root) {
+    var holder = root.querySelector('[data-rn-parent-id]');
+    var bar = root.querySelector('[data-rn-replying]');
+    if (holder) { holder.value = ''; }
+    if (bar) { bar.hidden = true; }
+  }
+
+  function commentField(form, name) {
+    var field = form.querySelector('[name="' + name + '"]');
+    return field ? field.value : '';
+  }
+
+  /** 直发模式才需要刷新评论区（审核制下新评论不会立刻出现） */
+  function refreshComments(message) {
+    if (typeof window.fetch !== 'function' || typeof window.DOMParser !== 'function') { return; }
+    window.fetch(window.location.pathname + window.location.search, { headers: { accept: 'text/html' } })
+      .then(function (response) { return response.ok ? response.text() : null; })
+      .then(function (html) {
+        if (!html) { return; }
+        var fresh = new window.DOMParser().parseFromString(html, 'text/html')
+          .querySelector('[data-rn-comments]');
+        var current = document.querySelector('[data-rn-comments]');
+        if (!fresh || !current) { return; }
+        current.replaceWith(fresh);
+        ensureCommentPostId();
+        initCommentAvatars();
+        if (message) { commentFeedback(fresh, message, 'ok'); }
+      })
+      .catch(function () { /* 刷新失败不影响已经给出的提示 */ });
+  }
+
+  function submitCommentForm(form) {
+    var root = commentRootOf(form);
+    if (!root || typeof window.fetch !== 'function') { return; }
+    var button = form.querySelector('.rn-comments__submit');
+    if (button) { button.disabled = true; }
+    commentFeedback(root, '正在提交…', null);
+
+    window.fetch(form.getAttribute('action') || '/comments/submit', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        postId: form.getAttribute('data-post-id') || '',
+        parentId: commentField(form, 'parentId'),
+        authorName: commentField(form, 'authorName'),
+        authorEmail: commentField(form, 'authorEmail'),
+        authorUrl: commentField(form, 'authorUrl'),
+        content: commentField(form, 'content'),
+        website: commentField(form, 'website')
+      })
+    }).then(function (response) {
+      return response.json().catch(function () { return null; }).then(function (payload) {
+        return { ok: response.ok, payload: payload };
+      });
+    }).then(function (result) {
+      var reason = result.payload && result.payload.error ? result.payload.error.message : '';
+      if (!result.ok) {
+        commentFeedback(root, reason || '提交失败，请稍后再试。', 'error');
+        return;
+      }
+      var status = result.payload && result.payload.data ? result.payload.data.status : '';
+      var content = form.querySelector('[name="content"]');
+      if (content) { content.value = ''; }
+      clearCommentReply(root);
+      if (status === 'pending') {
+        commentFeedback(root, '评论已提交，审核通过后将会公开显示。', 'ok');
+      } else {
+        refreshComments('评论已发布，感谢参与讨论。');
+      }
+    }).catch(function () {
+      commentFeedback(root, '网络异常，提交失败，请稍后再试。', 'error');
+    }).then(function () {
+      if (button) { button.disabled = false; }
+    });
+  }
+
+  /** 给插件的表单补 postId 隐藏字段：脚本不可用时，原生提交也能落在正确的文章上 */
+  function ensureCommentPostId() {
+    Array.prototype.forEach.call(document.querySelectorAll('.rn-comments__form[data-post-id]'), function (form) {
+      if (form.querySelector('input[name="postId"]')) { return; }
+      var hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = 'postId';
+      hidden.value = form.getAttribute('data-post-id') || '';
+      form.insertBefore(hidden, form.firstChild);
+    });
+  }
 
   /* ── 评论头像：由昵称与作者网址派生（插件不提供邮箱） ──────────────────
      rice.comments 为隐私刻意不输出评论者邮箱（公开接口 GET /api/comments 也只给
@@ -562,6 +701,7 @@
 
     initProseImages();
     initCodeBlocks();
+    ensureCommentPostId();
     initCommentAvatars();
     scanImages();
     measureProse();
