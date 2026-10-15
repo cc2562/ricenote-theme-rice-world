@@ -7,7 +7,7 @@
 {% macro row(item) %}
   <a class="archive-row" href="{{ item.url }}">
     {% if item.publishedAt %}
-      <time class="date" datetime="{{ dates.iso(item.publishedAt) }}">{{ dates.editorial(item.publishedAt) }}</time>
+      <time class="date" datetime="{{ dates.iso(item.publishedAt) }}">{{ item.publishedAt | date('YYYY-MM-DD') }}</time>
     {% else %}
       <span class="date" aria-hidden="true">—</span>
     {% endif %}

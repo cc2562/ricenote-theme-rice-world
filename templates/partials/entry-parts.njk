@@ -14,7 +14,7 @@
       <span class="sep" aria-hidden="true"></span>
     {% endif %}
     {% if entry.publishedAt %}
-      <time datetime="{{ dates.iso(entry.publishedAt) }}">{{ dates.editorial(entry.publishedAt) }}</time>
+      <time datetime="{{ dates.iso(entry.publishedAt) }}">{{ entry.publishedAt | date('YYYY-MM-DD') }}</time>
     {% endif %}
   </div>
 {% endmacro %}
@@ -28,7 +28,7 @@
 
 {% macro foot(entry) %}
   <div class="entry-foot">
-    {% if entry.publishedAt %}<span>{{ entry.publishedAt | date('YYYY·MM') }}</span>{% endif %}
+    {% if entry.publishedAt %}<span>{{ entry.publishedAt | date('YYYY-MM-DD') }}</span>{% endif %}
     {% if entry.terms and entry.terms.length %}
       <span>{% for term in entry.terms %}#{{ term.name }}{% if not loop.last %} {% endif %}{% endfor %}</span>
     {% endif %}

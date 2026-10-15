@@ -1,21 +1,13 @@
 {#
   日期输出宏。
 
-  为什么不用 `publishedAt | date('DD MMM YYYY')`：
-  ricenote 的 date 过滤器只认 YYYY / MM / DD / HH / mm / ss 六个 token，
-  `MMM` 会被拆成 `MM` + 残留的 `M`，输出会变成「14 10M 2026」。
-  因此这里按月号查表生成英文缩写，既满足规范「日期可用英文月份缩写、全站格式统一」，
-  又不依赖过滤器不支持的 token。
-#}
+  全站日期统一为 2026-10-14（YYYY-MM-DD）：无歧义、可排序，也不受语言/时区显示影响。
+  ricenote 的 date 过滤器只认 YYYY / MM / DD / HH / mm / ss 六个 token（没有 MMM），
+  所以原先「英文月份缩写」那套查表宏已不再需要，已移除。
 
-{% macro editorial(value) %}
-  {%- if not value -%}
-  {%- else -%}
-    {%- set monthIndex = (value | date('MM')) | int -%}
-    {%- set months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] -%}
-    {{- (value | date('DD')) ~ ' ' ~ (months[monthIndex - 1] or '') ~ ' ' ~ (value | date('YYYY')) -}}
-  {%- endif -%}
-{% endmacro %}
+  展示值与 `<time datetime="…">` 的属性值现在是同一个格式，因此渲染处直接写
+  `{{ 值 | date('YYYY-MM-DD') }}`；iso() 保留给需要显式表达「这是机器可读时间」的地方。
+#}
 
 {% macro iso(value) %}
   {{- (value | date('YYYY-MM-DD')) -}}
