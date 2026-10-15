@@ -21,19 +21,26 @@
       </div>
 
       {% if posts and posts.items.length %}
-        {% set groups = [] %}
+        {#
+          按年份分组前先给每篇标上年份。
+          ⚠️ nunjucks 的 groupby 返回的是**普通对象**（键 = 年份，值 = 该年的条目数组），
+          不是 Jinja 文档里那种 [{ grouper, list }] 数组：写 {% for group in ... %} 会一个都迭代不到，
+          而 | length 依然会给出组数 —— 很容易误以为分组成功，实际归档页只输出一个空的 .year-list。
+          因此必须用双变量写法 {% for 键, 值 in ... %}。
+        #}
+        {% set yearRows = [] %}
         {% for item in posts.items %}
-          {% set groups = groups.concat([{ post: item, year: ((item.publishedAt | date('YYYY')) or '未知年份') }]) %}
+          {% set yearRows = yearRows.concat([{ post: item, year: ((item.publishedAt | date('YYYY')) or '未知年份') }]) %}
         {% endfor %}
         <div class="year-list">
-          {% for group in groups | groupby('year') %}
+          {% for year, group in yearRows | groupby('year') %}
             <section class="year-block">
               <div class="year-head">
-                <span class="yr">{{ group.grouper }}</span>
-                <span class="count">{{ group.list | length }} 篇</span>
+                <span class="yr">{{ year }}</span>
+                <span class="count">{{ group | length }} 篇</span>
                 <span class="rule" aria-hidden="true"></span>
               </div>
-              {% for row in group.list %}{{ rows.row(row.post) }}{% endfor %}
+              {% for row in group %}{{ rows.row(row.post) }}{% endfor %}
             </section>
           {% endfor %}
         </div>
