@@ -24,16 +24,21 @@
             <span class="label" aria-hidden="true">/</span>
           {% endif %}
           {% if post.publishedAt %}
-            <span class="label"><time datetime="{{ dates.iso(post.publishedAt) }}">{{ dates.editorial(post.publishedAt) }}</time></span>
+            {# 日期统一成 2026-10-14 这种形式；datetime 属性仍是完整 ISO，机器可读与 SEO 不受影响 #}
+            <span class="label"><time datetime="{{ dates.iso(post.publishedAt) }}">{{ post.publishedAt | date('YYYY-MM-DD') }}</time></span>
           {% endif %}
         </div>
         <h1 class="article-title">{{ post.title }}</h1>
-        <div class="article-byline">
-          {% if post.authorName %}<span>{{ post.authorName }}</span>{% endif %}
-          {% if post.updatedAt %}
-            <span>更新于 <time datetime="{{ dates.iso(post.updatedAt) }}">{{ dates.editorial(post.updatedAt) }}</time></span>
-          {% endif %}
-        </div>
+        {#
+          这里不再显示「更新于 …」：正文底部由 rice.posts 注入的那一份已在 CSS 中隐藏，
+          两处重复没有必要；且文章页的日期已统一为 YYYY-MM-DD。
+          没有作者名时整行不渲染，避免留下一条空的分隔线。
+        #}
+        {% if post.authorName %}
+          <div class="article-byline">
+            <span>{{ post.authorName }}</span>
+          </div>
+        {% endif %}
       </div>
 
       {% set coverSrc = post.coverUrl or (post.fields.homeImage1 if post.fields else '') %}
