@@ -195,8 +195,6 @@ hr { border: 0; border-top: 1px solid var(--color-divider); margin: 0; }
 .prose a:focus-visible,
 .entry-title a:hover,
 .entry-title a:focus-visible,
-.article-nav a:hover .nm,
-.article-nav a:focus-visible .nm,
 .link-card:hover .link-name,
 a.rn-comment__author:hover,
 .site-foot a:hover {
@@ -207,8 +205,6 @@ a.rn-comment__author:hover,
   .prose a:focus-visible,
   .entry-title a:hover,
   .entry-title a:focus-visible,
-  .article-nav a:hover .nm,
-  .article-nav a:focus-visible .nm,
   .link-card:hover .link-name,
   a.rn-comment__author:hover,
   .site-foot a:hover {
@@ -899,19 +895,6 @@ html[data-motion="off"] .reader-head { transition: none; }
 }
 .tag:hover { color: var(--color-text); border-color: var(--color-text-muted); }
 
-.article-nav {
-  margin-top: clamp(48px, 6vw, 72px);
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6);
-}
-.article-nav a {
-  display: grid; gap: 6px;
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-divider);
-}
-.article-nav .nm { font-size: var(--fs-body); line-height: 1.5; transition: color var(--duration-fast) linear; }
-.article-nav a:hover .nm { color: var(--color-accent); }
-.article-nav .right { text-align: right; }
-
 .comments { margin-top: clamp(48px, 6vw, 80px); }
 .comments-head {
   display: flex; align-items: baseline; justify-content: space-between;
@@ -1118,8 +1101,6 @@ html[data-motion="off"] .reader-head { transition: none; }
   .intro { grid-template-columns: 1fr; align-items: start; gap: var(--space-6); }
   .foot-grid { grid-template-columns: 1fr; }
   .about-grid { grid-template-columns: 1fr; }
-  .article-nav { grid-template-columns: 1fr; gap: var(--space-4); }
-  .article-nav .right { text-align: left; }
   .comment-form .field-row { grid-template-columns: 1fr; }
   .media-triple { grid-template-columns: 1fr; }
   .media-triple .slot-main { aspect-ratio: 16 / 10; }
@@ -1241,7 +1222,6 @@ html[data-motion="off"] .rw-swup .transition-main { transition: none; }
 .empty-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-6); }
 .pager-status { font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--color-text-muted); }
 .pager-pages .is-disabled { opacity: .5; }
-.article-nav--single { grid-template-columns: minmax(0, 1fr); }
 
 /* ── 21. 页头与页脚补充（插件插槽 / 站点信息） ────────────────────────── */
 .foot-note { margin-top: 10px; color: var(--color-text-muted); font-size: var(--fs-small); max-width: 34ch; }

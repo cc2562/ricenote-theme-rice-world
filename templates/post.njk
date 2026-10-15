@@ -68,13 +68,8 @@
         </div>
       {% endif %}
 
-      <nav class="article-nav article-nav--single" aria-label="返回站点">
-        <a href="{{ url('home') }}">
-          <span class="label">回到</span>
-          <span class="nm">{{ site.title }} 首页</span>
-        </a>
-      </nav>
-
+      {# 正文末尾不再放「回到 {站点名} 首页」一栏：页头已有返回键，页脚也有首页入口，
+         在正文与评论之间再插一次只是噪音。 #}
       {% if has_feature('comments') %}
         <section class="comments" aria-labelledby="comments-title">
           <div class="comments-head">

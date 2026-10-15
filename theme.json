@@ -3,7 +3,7 @@
   "id": "rice.world",
   "name": "Rice World",
   "description": "Rice World：无边框编辑式个人刊物主题。首页以「一篇文章 = 一个版面单元」呈现，支持 0–4 张图片的七种拼版；文章页为紧凑顶栏的沉浸阅读，含目录抽屉、阅读进度、字号与主题切换、图片懒加载与加载中占位图、友情链接页、短代码与 Swup 页面过渡。配色、版式、图片加载与页脚文案都可在后台「外观中心 → 主题设置」调整。",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "apiVersion": "^1.0.0",
   "engine": "nunjucks",
   "author": "Rice World",
