@@ -874,6 +874,15 @@ html[data-motion="off"] .reader-head { transition: none; }
 .footnotes li { text-wrap: wrap; }
 
 /* ── 13. 文章页底部 ───────────────────────────────────────────────────── */
+/* rice.posts 会往 post.afterContent 插槽注入两块内容（标记见
+   plugins/official/posts/src/index.ts 的 posts.meta）：
+     <div class="rn-post-terms"><span>相关</span><a class="rn-term">…</a>…</div>
+     <p class="rn-post-updated">最后更新于 …</p>
+   它们与主题自己的标签行（下面的 .article-tags）和文章头部的「更新于 …」重复，
+   因此这里隐藏掉。只隐藏这两个类：同一个插槽里其它插件注入的内容不受影响。 */
+.rn-post-terms,
+.rn-post-updated { display: none; }
+
 .article-tags {
   /* 分割线之上的留白要明显大于线下的内容间距，否则线会「贴」在正文上 */
   margin-top: clamp(64px, 8vw, 96px);
