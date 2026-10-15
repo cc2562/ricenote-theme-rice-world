@@ -125,7 +125,11 @@ img, svg { display: block; max-width: 100%; }
 a { color: inherit; text-decoration: none; }
 button, input, select { font: inherit; color: inherit; }
 button { background: none; border: 0; cursor: pointer; }
-p { margin: 0; text-wrap: pretty; }
+/* 这里刻意不用 text-wrap: pretty：Chromium 只拿它避免末行孤字（无害），
+   但 WebKit（Safari）会整段重排，导致每一行都提前一个汉字换行 ——
+   在 360px 上满行距右边界从 14px 掉到 69px，读起来就是「右边留白很大」。
+   标题上的 balance 保留：它只作用于标题，实测不影响正文。 */
+p { margin: 0; }
 h1, h2, h3, h4 { margin: 0; font-weight: 600; text-wrap: balance; }
 ul, ol { margin: 0; padding: 0; }
 figure { margin: 0; }
@@ -867,7 +871,7 @@ html[data-motion="off"] .reader-head { transition: none; }
 }
 .footnotes h2 { font-size: var(--fs-h3); color: var(--color-text); margin-bottom: var(--space-4); }
 .footnotes ol { display: grid; gap: 10px; padding-left: 1.3em; }
-.footnotes li { text-wrap: pretty; }
+.footnotes li { text-wrap: wrap; }
 
 /* ── 13. 文章页底部 ───────────────────────────────────────────────────── */
 .article-tags {
